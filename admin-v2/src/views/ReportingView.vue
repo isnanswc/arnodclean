@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
-import axios from 'axios'
+import { apiClient as axios } from '@/api/client'
 import { Chart, registerables } from 'chart.js'
 import {
   TrendingUp,

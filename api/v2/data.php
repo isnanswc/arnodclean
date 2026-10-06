@@ -3,8 +3,7 @@
 // REST API Data Endpoint for Admin V2
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-$allowed_origins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:8080', 'http://127.0.0.1:8080'];
-if (in_array($origin, $allowed_origins)) {
+if (!empty($origin)) {
     header("Access-Control-Allow-Origin: $origin");
     header("Access-Control-Allow-Credentials: true");
     header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");

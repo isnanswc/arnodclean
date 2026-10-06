@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import axios from 'axios'
+import { apiClient as axios } from '@/api/client'
 import {
   Sparkles,
   Rocket,
