@@ -613,27 +613,11 @@ async function saveCurrentTab() {
   }
 }
 
-// Mobile Stacked Sheet Drawer & Quick Navigation
-const showMobileSheetDrawer = ref(false)
+// Mobile Bottom Horizontal Sheet Navigation
 const activeTabIndex = computed(() => tabs.findIndex(t => t.id === activeTab.value))
 
-function goToPrevTab() {
-  if (activeTabIndex.value > 0) {
-    activeTab.value = tabs[activeTabIndex.value - 1].id
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-}
-
-function goToNextTab() {
-  if (activeTabIndex.value < tabs.length - 1) {
-    activeTab.value = tabs[activeTabIndex.value + 1].id
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-}
-
-function selectTabFromDrawer(id: SettingTab) {
+function selectTab(id: SettingTab) {
   activeTab.value = id
-  showMobileSheetDrawer.value = false
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -880,175 +864,39 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- MOBILE ACTIVE SHEET SUMMARY PILL (Top Breadcrumb) -->
-    <div class="lg:hidden bg-white/90 backdrop-blur-md rounded-2xl p-3 border border-slate-200/80 shadow-xs flex items-center justify-between gap-3">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <div
-          class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 font-bold"
-          :class="tabs.find(t => t.id === activeTab)?.color || 'bg-blue-50 text-blue-600'"
-        >
-          <component :is="tabs.find(t => t.id === activeTab)?.icon" class="w-4 h-4" />
-        </div>
-        <div class="min-w-0">
-          <div class="flex items-center gap-1.5">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lembar {{ activeTabIndex + 1 }}/{{ tabs.length }}:</span>
-            <span class="text-xs font-bold text-slate-900 truncate">{{ tabs.find(t => t.id === activeTab)?.title }}</span>
-          </div>
-          <p class="text-[10px] text-slate-400 truncate">{{ tabs.find(t => t.id === activeTab)?.subtitle }}</p>
-        </div>
-      </div>
-      <button
-        type="button"
-        @click="showMobileSheetDrawer = true"
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold flex-shrink-0 transition-all border border-blue-200/60 shadow-2xs"
-      >
-        <Layers class="w-3.5 h-3.5" />
-        <span>Ganti Sheet</span>
-      </button>
-    </div>
-
-    <!-- MOBILE DOCKED SHEET CONTROLLER (Right Above Bottom Navbar, No Horizontal Scroll!) -->
-    <div class="lg:hidden fixed bottom-16 sm:bottom-[4.5rem] inset-x-3 sm:inset-x-6 z-40 max-w-lg mx-auto pointer-events-auto">
-      <div class="bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-2xl shadow-xl shadow-slate-900/10 p-1.5 flex items-center justify-between gap-2">
-        <!-- Prev Button -->
+    <!-- MOBILE BOTTOM HORIZONTAL SCROLLABLE SHEET NAVIGATION (Stacked right above bottom navbar) -->
+    <div class="lg:hidden fixed bottom-16 left-0 right-0 z-40 pointer-events-auto px-2 sm:px-4">
+      <div class="bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-2xl shadow-xl shadow-slate-900/10 p-1.5 flex items-center overflow-x-auto gap-1.5 scroll-smooth no-scrollbar">
         <button
+          v-for="t in tabs"
+          :key="t.id"
           type="button"
-          @click="goToPrevTab"
-          :disabled="activeTabIndex === 0"
-          class="p-2.5 rounded-xl text-slate-600 hover:bg-slate-100 disabled:opacity-25 transition-all flex items-center justify-center"
-          title="Lembar Sebelumnya"
+          @click="selectTab(t.id)"
+          class="flex-shrink-0 flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap active:scale-95"
+          :class="
+            activeTab === t.id
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25 font-bold scale-[1.02]'
+              : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60'
+          "
         >
-          <ChevronLeft class="w-4 h-4" />
-        </button>
-
-        <!-- Center Sheet Selector Button -->
-        <button
-          type="button"
-          @click="showMobileSheetDrawer = true"
-          class="flex-1 flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/70 transition-all text-left"
-        >
-          <div class="flex items-center gap-2.5 min-w-0">
-            <div
-              class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-              :class="tabs.find(t => t.id === activeTab)?.color"
-            >
-              <component :is="tabs.find(t => t.id === activeTab)?.icon" class="w-3.5 h-3.5" />
-            </div>
-            <div class="min-w-0">
-              <span class="text-xs font-bold text-slate-800 block truncate leading-tight">
-                {{ tabs.find(t => t.id === activeTab)?.title }}
-              </span>
-              <span class="text-[10px] text-slate-400 block font-medium">
-                Lembar {{ activeTabIndex + 1 }} dari {{ tabs.length }} • Sentuh untuk ganti
-              </span>
-            </div>
-          </div>
-          <div class="flex items-center gap-1 text-blue-600 flex-shrink-0 pl-1">
-            <SlidersHorizontal class="w-3.5 h-3.5" />
-            <ChevronUp class="w-3.5 h-3.5" />
-          </div>
-        </button>
-
-        <!-- Next Button -->
-        <button
-          type="button"
-          @click="goToNextTab"
-          :disabled="activeTabIndex === tabs.length - 1"
-          class="p-2.5 rounded-xl text-slate-600 hover:bg-slate-100 disabled:opacity-25 transition-all flex items-center justify-center"
-          title="Lembar Selanjutnya"
-        >
-          <ChevronRight class="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-
-    <!-- MOBILE STACKED SHEET MENU DRAWER (Vertical Stack, Zero Horizontal Scroll!) -->
-    <div
-      v-if="showMobileSheetDrawer"
-      class="lg:hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-3 sm:p-4 animate-fadeIn"
-      @click.self="showMobileSheetDrawer = false"
-    >
-      <div class="w-full max-w-lg bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden max-h-[82vh] flex flex-col mb-16 sm:mb-0">
-        <!-- Drawer Header -->
-        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div>
-            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
-              <Layers class="w-4 h-4 text-blue-600" />
-              <span>Daftar Menu Lembar Pengaturan</span>
-            </h3>
-            <p class="text-[11px] text-slate-500">7 lembar tersusun rapi tanpa perlu geser horizontal</p>
-          </div>
-          <button
-            type="button"
-            @click="showMobileSheetDrawer = false"
-            class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+          <component
+            :is="t.icon"
+            class="w-4 h-4 flex-shrink-0"
+            :class="activeTab === t.id ? 'text-white' : 'text-slate-500'"
+          />
+          <span>{{ t.title }}</span>
+          <span
+            v-if="t.badge"
+            class="text-[9px] px-1.5 py-0.2 rounded-md font-bold"
+            :class="activeTab === t.id ? 'bg-white/20 text-white' : 'bg-violet-100 text-violet-700'"
           >
-            <X class="w-4 h-4" />
-          </button>
-        </div>
-
-        <!-- Vertically Stacked Sheets List -->
-        <div class="p-3 space-y-1.5 overflow-y-auto max-h-[62vh]">
-          <button
-            v-for="(t, idx) in tabs"
-            :key="t.id"
-            type="button"
-            @click="selectTabFromDrawer(t.id)"
-            class="w-full flex items-center justify-between p-3 rounded-2xl text-left transition-all border"
-            :class="
-              activeTab === t.id
-                ? 'bg-blue-50/90 border-blue-200 shadow-xs text-blue-900'
-                : 'bg-white hover:bg-slate-50 border-slate-100 text-slate-700'
-            "
-          >
-            <div class="flex items-center gap-3 min-w-0">
-              <div
-                class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-                :class="activeTab === t.id ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : t.color"
-              >
-                <component :is="t.icon" class="w-5 h-5" />
-              </div>
-              <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md" :class="activeTab === t.id ? 'bg-blue-200/60 text-blue-800' : 'bg-slate-100 text-slate-500'">
-                    #{{ idx + 1 }}
-                  </span>
-                  <span class="font-bold text-xs truncate" :class="activeTab === t.id ? 'text-blue-950 font-bold' : 'text-slate-800'">
-                    {{ t.title }}
-                  </span>
-                  <span v-if="t.badge" class="px-1.5 py-0.2 rounded-md bg-violet-100 text-violet-700 text-[9px] font-bold">
-                    {{ t.badge }}
-                  </span>
-                </div>
-                <p class="text-[11px] truncate mt-0.5" :class="activeTab === t.id ? 'text-blue-700/80' : 'text-slate-400'">
-                  {{ t.subtitle }}
-                </p>
-              </div>
-            </div>
-
-            <div class="flex-shrink-0 pl-2">
-              <div
-                v-if="activeTab === t.id"
-                class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs"
-              >
-                <Check class="w-3.5 h-3.5" />
-              </div>
-              <ChevronRight v-else class="w-4 h-4 text-slate-300" />
-            </div>
-          </button>
-        </div>
-
-        <!-- Drawer Footer -->
-        <div class="p-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <span class="text-[11px] text-slate-400">Total 7 lembar konfigurasi</span>
-          <button
-            type="button"
-            @click="showMobileSheetDrawer = false"
-            class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-all"
-          >
-            Tutup
-          </button>
-        </div>
+            {{ t.badge }}
+          </span>
+          <span
+            v-if="activeTab === t.id"
+            class="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0 ml-0.5 animate-pulse"
+          ></span>
+        </button>
       </div>
     </div>
 
@@ -2261,6 +2109,15 @@ onBeforeUnmount(() => {
 
 .shadow-2xs {
   box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+/* Hide horizontal scrollbar on mobile sheet bar while keeping touch scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Silky Smooth Scrollbar */
