@@ -1,0 +1,29 @@
+=========================================
+PANDUAN UPDATE SERVER (arnod-clean.com)
+=========================================
+
+Agar semua perbaikan error (404, Telegram, Security) berjalan di web utama,
+mohon upload file-file berikut ini untuk MENIMPA (overwrite) file lama di server:
+
+1. FILE UTAMA (Wajib)
+   - htaccess_production  --> Upload, lalu RENAME (Ganti Nama) di server menjadi ".htaccess"
+   - article.php          --> (Berisi logika perbaikan link otomatis)
+
+2. FOLDER ADMIN (Wajib)
+   - admin/settings.php              --> (Fix pengaturan Telegram Multi-user)
+   - admin/articles.php              --> (Fix agar artikel baru tidak error 404 URL-nya)
+   - admin/includes/auth.php         --> (Fix fungsi kirim Telegram)
+   - admin/api/process_auto_content.php --> (Fix AI generate konten agar URL bersih)
+
+-----------------------------------------
+CATATAN KHUSUS .htaccess
+-----------------------------------------
+File ".htaccess" di komputer ini (Localhost) berbeda dengan di server.
+- Di Localhost: pakai yang ada sekarang (RewriteBase /adc/)
+- Di Server: GUNAKAN file "htaccess_production" yang baru saya buat ini (RewriteBase /).
+
+Jangan upload ".htaccess" dari komputer ini langsung, tapi upload "htaccess_production" lalu ubah namanya di sana.
+
+3. FITUR BARU (Opsional tapi Bagus)
+   - admin/seo_monitor.php           --> (Halaman Cek Skor SEO)
+   - admin/includes/header.php       --> (Menu Sidebar baru)

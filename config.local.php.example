@@ -1,0 +1,9 @@
+<?php
+// config.local.php
+// Konfigurasi Database Lokal (XAMPP / Development)
+// Salin berkas ini menjadi config.local.php dan sesuaikan pengaturan di bawah.
+
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'arnod_clean_db'); // Ganti dengan nama database lokal Anda
+define('DB_USER', 'root');
+define('DB_PASS', '');               // Default XAMPP biasanya kosong

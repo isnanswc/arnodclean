@@ -1,0 +1,24 @@
+# Credentials & environment config
+config.php
+config.local.php
+
+# Node modules & build cache
+node_modules/
+*/node_modules/
+.npm/
+
+# Logs & temporary files
+*.log
+error_log
+*.lock
+Thumbs.db
+.DS_Store
+
+# Hidden server files & sensitive dumps
+.well-known/
+*.sql
+!database/*.sql
+
+# IDE & Editor files
+.vscode/
+.idea/

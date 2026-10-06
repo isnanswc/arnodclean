@@ -1,0 +1,171 @@
+<?php
+// admin/seo_monitor.php
+require_once '../db.php';
+require_once 'includes/auth.php';
+require_once 'includes/functions.php';
+
+checkLogin();
+
+// SEO Scoring Logic
+function calculateSeoScore($article) {
+    $score = 100;
+    $issues = [];
+    
+    // 1. Title Check
+    $title = $article['seo_title'] ?: $article['title'];
+    $titleLen = strlen($title);
+    if ($titleLen < 30 || $titleLen > 70) {
+        $score -= 10; 
+        $issues[] = "Title length Critical (<30 or >70)";
+    } elseif ($titleLen > 60) {
+        $score -= 5;
+        $issues[] = "Title length Warning (61-70)";
+    }
+    
+    // 2. Desc Check
+    $desc = $article['seo_description']; 
+    $descLen = strlen($desc);
+    
+    if ($descLen == 0) {
+        $score -= 40;
+        $issues[] = "Meta Description kosong!";
+    } elseif ($descLen < 100 || $descLen > 170) {
+        $score -= 10;
+        $issues[] = "Meta Desc Critical (<100 or >170)";
+    } elseif ($descLen > 160) {
+        $score -= 5;
+        $issues[] = "Meta Desc Warning (161-170)";
+    }
+    
+    // 3. Image Alt (Simple check if image exists)
+    if (empty($article['image_path'])) {
+        $score -= 10;
+        $issues[] = "Tidak ada gambar utama";
+    }
+
+    return ['score' => $score, 'issues' => $issues];
+}
+
+$stmt = $pdo->query("SELECT id, title, slug, seo_title, seo_description, image_path, status, created_at, seo_score, seo_audit_log FROM articles WHERE status='published' ORDER BY created_at DESC");
+$articles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+require_once 'includes/header.php';
+?>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">SEO Monitor 🔍</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">Export to PDF</button>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card border-0 shadow-sm bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">SEO Health Overview</h5>
+                <p class="card-text">Total Artikel Terbit: <strong><?php echo count($articles); ?></strong></p>
+                <!-- Add more aggregate stats here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Artikel</th>
+                        <th>SEO Title</th>
+                        <th>Meta Desc</th>
+                        <th>Score</th>
+                        <th>Issues</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($articles)): ?>
+                        <tr><td colspan="7" class="text-center">Belum ada artikel.</td></tr>
+                    <?php else: ?>
+                        <?php foreach ($articles as $art): 
+                            // Gunakan skor dari database jika ada, jika tidak (artikel lama) hitung manual
+                            $dbScore = $art['seo_score'];
+                            $auditLog = !empty($art['seo_audit_log']) ? json_decode($art['seo_audit_log'], true) : [];
+                            
+                            if ($dbScore !== null) {
+                                $score = $dbScore;
+                                $issues = isset($auditLog['critique']) ? explode("\n", $auditLog['critique']) : [];
+                            } else {
+                                // Fallback logic for old articles
+                                $analysis = calculateSeoScore($art);
+                                $score = $analysis['score'];
+                                $issues = $analysis['issues'];
+                            }
+                            
+                            $color = $score >= 100 ? 'success' : ($score >= 80 ? 'info' : ($score >= 60 ? 'warning' : 'danger'));
+                        ?>
+                        <tr>
+                            <td style="max-width: 200px;">
+                                <div class="fw-bold text-truncate" title="<?php echo htmlspecialchars($art['title']); ?>">
+                                    <?php echo htmlspecialchars($art['title']); ?>
+                                </div>
+                                <small class="text-muted"><?php echo date('d M Y', strtotime($art['created_at'])); ?></small>
+                            </td>
+                            <td>
+                                <?php 
+                                    $t = $art['seo_title'] ?: $art['title'];
+                                    $len = strlen($t);
+                                    $cls = ($len >= 40 && $len <= 60) ? 'text-success' : (($len > 60 && $len <= 70) ? 'text-warning' : 'text-danger');
+                                ?>
+                                <div class="<?php echo $cls; ?> fw-bold"><?php echo $len; ?> chars</div>
+                                <small class="text-muted d-block text-truncate" style="max-width: 150px;"><?php echo htmlspecialchars($t); ?></small>
+                            </td>
+                            <td>
+                                <?php 
+                                    $d = $art['seo_description'];
+                                    $len = strlen($d);
+                                    $cls = ($len >= 100 && $len <= 160) ? 'text-success' : (($len > 160 && $len <= 170) ? 'text-warning' : 'text-danger');
+                                ?>
+                                <div class="<?php echo $cls; ?> fw-bold"><?php echo $len; ?> chars</div>
+                                <small class="text-muted d-block text-truncate" style="max-width: 200px;"><?php echo htmlspecialchars($d); ?></small>
+                            </td>
+                            <td>
+                                <span class="badge bg-<?php echo $color; ?> fs-6"><?php echo $score; ?></span>
+                            </td>
+                            <td>
+                                <?php if (!empty($issues)): ?>
+                                    <button class="btn btn-sm btn-link text-decoration-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#audit-<?php echo $art['id']; ?>">
+                                        Lihat Detail <i class="fa-solid fa-chevron-down"></i>
+                                    </button>
+                                    <div class="collapse mt-1" id="audit-<?php echo $art['id']; ?>">
+                                        <div class="card card-body p-2 bg-light small text-danger border-0">
+                                            <?php 
+                                            if (is_array($issues)) {
+                                                foreach($issues as $iss) echo "<div>• " . htmlspecialchars($iss) . "</div>"; 
+                                            } else {
+                                                echo htmlspecialchars($issues);
+                                            }
+                                            ?>
+                                        </div>
+                                    </div>
+                                <?php else: ?>
+                                    <span class="badge bg-soft-success text-success"><i class="fa-solid fa-check-circle"></i> Perfect</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <a href="articles.php" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-pen"></i></a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<?php require_once 'includes/footer.php'; ?>

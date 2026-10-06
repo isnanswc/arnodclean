@@ -1,0 +1,13 @@
+[04-Jan-2026 10:18:11 Asia/Jakarta] PHP Warning:  in_array() expects parameter 2 to be array, null given in /home/uqzgndlp/public_html/admin/reporting.php on line 123
+[04-Jan-2026 10:18:11 Asia/Jakarta] PHP Warning:  in_array() expects parameter 2 to be array, null given in /home/uqzgndlp/public_html/admin/reporting.php on line 129
+[04-Jan-2026 10:18:11 Asia/Jakarta] PHP Warning:  in_array() expects parameter 2 to be array, null given in /home/uqzgndlp/public_html/admin/reporting.php on line 135
+[04-Jan-2026 10:18:11 Asia/Jakarta] PHP Warning:  in_array() expects parameter 2 to be array, null given in /home/uqzgndlp/public_html/admin/reporting.php on line 141
+[04-Jan-2026 10:18:11 Asia/Jakarta] PHP Warning:  in_array() expects parameter 2 to be array, null given in /home/uqzgndlp/public_html/admin/reporting.php on line 147
+[04-Jan-2026 10:18:11 Asia/Jakarta] PHP Warning:  in_array() expects parameter 2 to be array, null given in /home/uqzgndlp/public_html/admin/reporting.php on line 153
+[04-Jan-2026 10:18:30 Asia/Jakarta] PHP Warning:  in_array() expects parameter 2 to be array, null given in /home/uqzgndlp/public_html/admin/reporting.php on line 123
+[04-Jan-2026 10:18:30 Asia/Jakarta] PHP Warning:  in_array() expects parameter 2 to be array, null given in /home/uqzgndlp/public_html/admin/reporting.php on line 129
+[04-Jan-2026 10:18:30 Asia/Jakarta] PHP Warning:  in_array() expects parameter 2 to be array, null given in /home/uqzgndlp/public_html/admin/reporting.php on line 135
+[04-Jan-2026 10:18:30 Asia/Jakarta] PHP Warning:  in_array() expects parameter 2 to be array, null given in /home/uqzgndlp/public_html/admin/reporting.php on line 141
+[04-Jan-2026 10:18:30 Asia/Jakarta] PHP Warning:  in_array() expects parameter 2 to be array, null given in /home/uqzgndlp/public_html/admin/reporting.php on line 147
+[04-Jan-2026 10:18:30 Asia/Jakarta] PHP Warning:  in_array() expects parameter 2 to be array, null given in /home/uqzgndlp/public_html/admin/reporting.php on line 153
+[04-Jan-2026 10:41:40 Asia/Jakarta] PHP Warning:  Cannot modify header information - headers already sent by (output started at /home/uqzgndlp/public_html/admin/includes/header.php:1) in /home/uqzgndlp/public_html/admin/reporting.php on line 44

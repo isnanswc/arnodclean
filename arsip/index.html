@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<!-- Event snippet for Kunjungan halaman conversion page -->
+<script>
+  gtag('event', 'conversion', {'send_to': 'AW-17621219370/o7jCCI-q5KYbEKrwudJB'});
+</script>
+
+  <!-- Basic SEO -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arno D Clean, Jasa Cuci Sofa Profesional & Bersih Maksimal</title>
+  <meta name="description" content="Arno D Clean Jasa cuci sofa profesional yang higienis, wangi, dan cepat. Layanan panggilan ke rumah, garansi kepuasan, harga transparan." />
+  <meta name="keywords" content="jasa cuci sofa, cuci sofa, cleaning service, cuci springbed, cuci karpet, kebersihan sofa, Jasa cuci sofa, cuci sofa Citra Raya, cuci sofa Pasar Kemis, cuci sofa Kota Bumi, cuci sofa Karawaci, cuci sofa Perum, cuci sofa Panongan, cuci sofa Poris, cuci sofa Cipondoh, cuci sofa BSD, cuci sofa Serpong, layanan cuci sofa profesional, pembersih sofa, cuci sofa terdekat, ahli cuci sofa, cuci spring bed, cuci karpet, cuci jok mobil, cuci sofa cepat, cuci sofa murah, jasa kebersihan sofa, cuci sofa panggil, cuci sofa rumah" />
+  <link rel="canonical" href="https://www.arnod-clean.com/" />
+  <meta name="robots" content="index,follow" />
+
+  <!-- Open Graph / Social -->
+  <meta property="og:title" content="Arno D Clean Jasa Cuci Sofa Profesional" />
+  <meta property="og:description" content="Sofa bersih, higienis, dan wangi. Teknisi terlatih, bahan aman, hasil maksimal." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.arnod-Clean.co.id/" />
+  <meta property="og:image" content="https://picsum.photos/1200/630?random=11" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Favicon (dummy) -->
+  <link rel="icon" href="img/l2.png" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Bootstrap & Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+
+  <!-- AOS (Animate On Scroll) -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
+
+  <style>
+    :root{
+      --primary: #2C73D2;     /* biru sejuk */
+      --secondary: #84DCCF;   /* teal lembut */
+      --accent: #4BB3FD;      /* biru terang */
+      --ink: #1f2a37;         /* teks gelap */
+      --muted: #6b7280;       /* teks sekunder */
+      --bg: #f6f9fc;          /* latar lembut */
+      --white: #ffffff;
+      --card: #ffffff;
+      --shadow: 0 10px 30px rgba(23,43,77,0.08);
+      --radius: 14px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.6;
+    }
+
+    /* Navbar */
+    .navbar {
+      backdrop-filter: saturate(180%) blur(10px);
+      background: rgba(255,255,255,0.85) !important;
+      box-shadow: var(--shadow);
+    }
+    .navbar .nav-link { font-weight: 500; }
+
+    /* Hero Parallax */
+    .hero {
+      position: relative;
+      min-height: 92vh;
+      display: grid;
+      place-items: center;
+      color: var(--white);
+      text-align: center;
+      overflow: hidden;
+      background: url('img/b2.png') center/cover no-repeat fixed;
+    }
+    .hero::before{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(180deg, rgba(31,42,55,0.55), rgba(31,42,55,0.25));
+    }
+    .hero-content { position: relative; z-index: 2; padding: 2rem; }
+    .hero h1 { font-weight: 700; letter-spacing: 0.2px; }
+    .hero p { max-width: 680px; margin: 0 auto; opacity: 0.95; }
+
+    /* Sections */
+    section.section {
+      padding: clamp(60px, 8vw, 110px) 0;
+    }
+    .section-title {
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .section-subtitle {
+      color: var(--muted);
+      max-width: 760px;
+      margin-inline: auto;
+      margin-bottom: 2rem;
+    }
+
+    /* Cards */
+    .service-card, .feature-card {
+      background: var(--card);
+      border: 0;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+    .service-card:hover, .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(23,43,77,0.12);
+    }
+    .service-card img, .feature-card img {
+      width:100%;
+      height:220px;
+      object-fit: cover;
+    }
+
+    /* Process timeline style */
+    .step {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.25rem;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+    .step-icon {
+      width: 42px; height: 42px;
+      display: grid; place-items: center;
+      border-radius: 10px;
+      color: var(--white);
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+    }
+
+    /* Testimonial */
+    .testimonial {
+      background: linear-gradient(180deg, #eaf5ff, #f6f9fc);
+    }
+    .testimonial .carousel-item {
+      min-height: 280px;
+    }
+    .quote-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+    }
+
+    /* Floating WhatsApp */
+    .wa-float {
+      position: fixed; right: 18px; bottom: 18px; z-index: 1080;
+      width: 58px; height: 58px;
+      border-radius: 50%;
+      display: grid; place-items: center;
+      color: #fff; background: #25D366;
+      box-shadow: 0 12px 30px rgba(37,211,102,.35);
+      transition: transform .2s ease;
+    }
+    .wa-float:hover { transform: translateY(-2px) scale(1.03); }
+
+    /* Chat popup */
+    .chat-popup {
+      position: fixed; right: 18px; bottom: 86px; z-index: 1080;
+      width: min(340px, calc(100vw - 36px));
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(31,42,55,.18);
+      overflow: hidden;
+      opacity: 0; transform: translateY(14px) scale(.98);
+      pointer-events: none;
+      transition: opacity .22s ease, transform .22s ease;
+    }
+    .chat-popup.open {
+      opacity: 1; transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+    .chat-header {
+      display: flex; align-items:center; justify-content: space-between;
+      gap: 12px; padding: 12px 14px; color:#fff;
+      background: linear-gradient(135deg, #128C7E, #25D366);
+    }
+    .chat-body {
+      padding: 14px; background: #f4f7f9;
+      max-height: 300px; overflow: auto;
+    }
+    .chat-bubble {
+      background: #fff; border-radius: 12px 12px 12px 4px;
+      box-shadow: var(--shadow); padding: 10px 12px; margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+    .chat-footer {
+      padding: 12px; background: #fff; display: grid; gap: 8px;
+    }
+    .chat-footer textarea {
+      width:100%; border:1px solid #e5e7eb; border-radius: 10px;
+      padding: 10px 12px; resize: none; min-height: 54px;
+    }
+
+    /* Scroll in/out animations (custom + AOS) */
+    .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.in { opacity: 1; transform: translateY(0); }
+    .reveal.out { opacity: 0.1; transform: translateY(12px) scale(.995); }
+
+    /* Footer */
+    .footer {
+      background: #0f172a; color: #cbd5e1;
+    }
+    .footer a { color: #e2e8f0; text-decoration: none; }
+    .footer a:hover { color: #93c5fd; }
+
+    /* Small helpers */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border: 0;
+      box-shadow: 0 10px 24px rgba(76,141,235,.25);
+    }
+    .btn-outline-primary {
+      border-color: var(--primary); color: var(--primary);
+    }
+    .badge-soft {
+      background: #e6f1ff; color: var(--primary);
+      font-weight: 600; border-radius: 999px; padding: 6px 12px;
+    }
+    
+   /* === FIX RESPONSIVE MOBILE === */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 767.98px) {
+  .hero {
+    background-attachment: scroll !important; /* matikan parallax di mobile */
+    min-height: 70vh; /* biar tidak terlalu panjang */
+  }
+  .service-card img, .feature-card img {
+    height: auto; /* biar gambar tidak paksa tinggi */
+  }
+  .navbar .nav-link {
+    padding: 0.75rem 1rem; /* klik area lebih nyaman di mobile */
+  }
+}
+
+#map { height: 100vh; }
+      .legend { background: white; padding: 6px 8px; font-size: 14px; }
+  </style>
+
+  <!-- Structured Data (LocalBusiness) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Arno D Clean",
+    "image": "https://picsum.photos/800/600?random=9",
+    "@id": "https://www.cleansofa.co.id/",
+    "url": "https://www.cleansofa.co.id/",
+    "telephone": "+62 812-3456-7890",
+    "priceRange": "Rp",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Jalan Kenanga No. 12",
+      "addressLocality": "Haarlem",
+      "addressRegion": "Hollandia Utara",
+      "postalCode": "2011",
+      "addressCountry": "NL"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 52.3874,
+      "longitude": 4.6462
+    },
+    "openingHours": "Mo-Su 08:00-20:00",
+    "sameAs": ["https://www.instagram.com/cleansofa"]
+  }
+  </script>
+  
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-17621219370"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'AW-17621219370');
+</script>
+
+</head>
+<body data-bs-spy="scroll" data-bs-target="#mainNav" data-bs-offset="80" tabindex="0">
+
+  <!-- Navbar -->
+  <nav id="mainNav" class="navbar navbar-expand-lg sticky-top py-2">
+    <div class="container">
+      <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#home">
+        <i class="fa-solid fa-couch text-primary"></i>
+        Arno D Clean
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent" aria-controls="navContent" aria-expanded="false" aria-label="Menu">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div id="navContent" class="collapse navbar-collapse">
+        <ul class="navbar-nav ms-auto gap-lg-2">
+          <li class="nav-item"><a class="nav-link" href="#home">Beranda</a></li>
+          <li class="nav-item"><a class="nav-link" href="#services">Produk & Jasa</a></li>
+          <li class="nav-item"><a class="nav-link" href="#process">Alur Pemesanan</a></li>
+          <li class="nav-item"><a class="nav-link" href="#testimonials">Testimoni</a></li>
+          <li class="nav-item"><a class="nav-link" href="#benefits">Keunggulan</a></li>
+          <li class="nav-item"><a class="nav-link" href="#location">Lokasi</a></li>
+          <li class="nav-item"><a class="nav-link" href="#contact">Kontak</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero / Halaman Utama -->
+  <header id="home" class="hero">
+    <div class="hero-content container">
+      <span class="badge-soft mb-3">Jasa Cuci Sofa Profesional</span>
+      <br><br>
+      <h1 class="display-5 mb-3" data-aos="fade-up">Sofa bersih, higienis, dan wangi tanpa repot.</h1>
+      <p class="mb-4" data-aos="fade-up" data-aos-delay="100">
+        Kami membersihkan sofa Anda dengan bahan aman, alat modern, dan teknisi terlatih. Layanan panggilan ke rumah, hasil maksimal, garansi kepuasan.
+      </p>
+      <div class="d-flex justify-content-center gap-3" data-aos="fade-up" data-aos-delay="200">
+        <a href="#services" class="btn btn-primary btn-lg"><i class="fa-solid fa-bolt me-2"></i>Lihat Layanan</a>
+        <a href="#contact" class="btn btn-success btn-lg">Konsultasi Gratis</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Produk & Jasa -->
+  <section id="services" class="section">
+    <div class="container reveal">
+      <div class="text-center mb-4">
+        <h2 class="section-title">Produk & Jasa</h2>
+        <p class="section-subtitle">Paket lengkap untuk kebutuhan rumah, apartemen, dan kantor.</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-4" data-aos="zoom-in">
+          <div class="card service-card h-100">
+            <img src="img/2.jpg" loading="lazy" alt="Cuci sofa fabric profesional" />
+            <div class="card-body">
+              <h5 class="card-title">Cuci Sofa Fabric</h5>
+              <p class="card-text">Deep cleaning, penghilangan noda, dan deodorizing untuk sofa kain Anda.</p>
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="fw-semibold text-primary">Mulai dari Rp 10.000</span>
+                <a href="#contact" class="btn btn-sm btn-primary">Pesan</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4" data-aos="zoom-in" data-aos-delay="100">
+          <div class="card service-card h-100">
+            <img src="img/1.jpg" loading="lazy" alt="Cuci sofa leather premium" />
+            <div class="card-body">
+              <h5 class="card-title">Cuci Sofa Leather</h5>
+              <p class="card-text">Perawatan lembut khusus kulit: pembersihan, conditioning, dan proteksi UV.</p>
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="fw-semibold text-primary">Mulai dari Rp 10.000</span>
+                <a href="#contact" class="btn btn-sm btn-primary">Pesan</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4" data-aos="zoom-in" data-aos-delay="200">
+          <div class="card service-card h-100">
+            <img src="img/4.jpg" loading="lazy" alt="Cuci spring bed dan kasur" />
+            <div class="card-body">
+              <h5 class="card-title">Cuci Spring Bed</h5>
+              <p class="card-text">Hisap tungau, hilangkan bau, dan segarkan kasur untuk tidur lebih nyenyak.</p>
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="fw-semibold text-primary">Mulai dari Rp 10.000</span>
+                <a href="#contact" class="btn btn-sm btn-primary">Pesan</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4" data-aos="zoom-in">
+          <div class="card service-card h-100">
+            <img src="img/5.png" loading="lazy" alt="Cuci karpet kantor dan rumah" />
+            <div class="card-body">
+              <h5 class="card-title">Cuci Karpet</h5>
+              <p class="card-text">Pembersihan mendalam dengan alat ekstraksi untuk karpet rumah maupun kantor.</p>
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="fw-semibold text-primary">Mulai dari Rp 10.000</span>
+                <a href="#contact" class="btn btn-sm btn-primary">Pesan</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4" data-aos="zoom-in" data-aos-delay="100">
+          <div class="card service-card h-100">
+            <img src="img/6.png" loading="lazy" alt="Jok mobil bersih dan wangi" />
+            <div class="card-body">
+              <h5 class="card-title">Cuci Jok Mobil</h5>
+              <p class="card-text">Detailing jok fabric/leather, hilangkan noda dan aroma tak sedap.</p>
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="fw-semibold text-primary">Mulai dari Rp 10.000</span>
+                <a href="#contact" class="btn btn-sm btn-primary">Pesan</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4" data-aos="zoom-in" data-aos-delay="200">
+          <div class="card service-card h-100">
+            <img src="img/7.png" loading="lazy" alt="Disinfeksi dan deodorizing ruangan" />
+            <div class="card-body">
+              <h5 class="card-title">Deodorizing & Disinfeksi</h5>
+              <p class="card-text">Netralisir bau membandel dan kurangi kuman menggunakan formula aman.</p>
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="fw-semibold text-primary">Mulai dari Rp 10.000</span>
+                <a href="#contact" class="btn btn-sm btn-primary">Pesan</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- row -->
+    </div>
+  </section>
+
+  <!-- Alur proses pemesanan -->
+  <section id="process" class="section">
+    <div class="container reveal">
+      <div class="text-center mb-4">
+        <h2 class="section-title">Alur proses pemesanan</h2>
+        <p class="section-subtitle">Sederhana, transparan, dan cepat. Kami jaga pengalaman Anda tetap nyaman.</p>
+      </div>
+      <div class="row g-3 g-lg-4">
+        <div class="col-md-6 col-lg-3" data-aos="fade-up">
+          <div class="step h-100">
+            <div class="step-icon"><i class="fa-solid fa-phone"></i></div>
+            <div>
+              <div class="fw-semibold">Konsultasi</div>
+              <div class="text-muted small">Ceritakan kebutuhan Anda & dapatkan estimasi.</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="100">
+          <div class="step h-100">
+            <div class="step-icon"><i class="fa-solid fa-calendar-check"></i></div>
+            <div>
+              <div class="fw-semibold">Jadwalkan</div>
+              <div class="text-muted small">Tentukan waktu & lokasi kunjungan.</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="200">
+          <div class="step h-100">
+            <div class="step-icon"><i class="fa-solid fa-spray-can-sparkles"></i></div>
+            <div>
+              <div class="fw-semibold">Pengerjaan</div>
+              <div class="text-muted small">Teknisi datang dan mulai pembersihan.</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-3" data-aos="fade-up" data-aos-delay="300">
+          <div class="step h-100">
+            <div class="step-icon"><i class="fa-solid fa-thumbs-up"></i></div>
+            <div>
+              <div class="fw-semibold">Quality Check</div>
+              <div class="text-muted small">Review hasil & garansi kepuasan.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimoni Carousel -->
+  <section id="testimonials" class="section testimonial">
+    <div class="container reveal">
+      <div class="text-center mb-4">
+        <h2 class="section-title">Apa kata pelanggan</h2>
+        <p class="section-subtitle">Sebagian ulasan dari pelanggan yang telah kami bantu.</p>
+      </div>
+
+      <div id="testiCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000" data-aos="fade-up">
+        <div class="carousel-indicators">
+          <button type="button" data-bs-target="#testiCarousel" data-bs-slide-to="0" class="active" aria-label="Slide 1"></button>
+          <button type="button" data-bs-target="#testiCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+          <button type="button" data-bs-target="#testiCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+        </div>
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <div class="row justify-content-center">
+              <div class="col-lg-8">
+                <div class="quote-card">
+                  <div class="d-flex align-items-center gap-3 mb-2">
+                    <img src="https://testingbot.com/free-online-tools/random-avatar/64" alt="Foto pelanggan 1" class="rounded-circle" width="56" height="56" loading="lazy">
+                    <div>
+                      <div class="fw-semibold">Dewi K.</div>
+                      <div class="small text-muted">Ciledug</div>
+                    </div>
+                    <div class="ms-auto text-warning"><i class="fa-solid fa-star"></i> 5.0</div>
+                  </div>
+                  <p class="mb-0">Sofa jadi bersih dan wangi. Prosesnya rapi, teknisinya ramah. Pasti repeat!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            <div class="row justify-content-center">
+              <div class="col-lg-8">
+                <div class="quote-card">
+                  <div class="d-flex align-items-center gap-3 mb-2">
+                    <img src="https://i.pravatar.cc/64" alt="Foto pelanggan 2" class="rounded-circle" width="56" height="56" loading="lazy">
+                    <div>
+                      <div class="fw-semibold">Rizal P.</div>
+                      <div class="small text-muted">Serpong</div>
+                    </div>
+                    <div class="ms-auto text-warning"><i class="fa-solid fa-star"></i> 4.9</div>
+                  </div>
+                  <p class="mb-0">Harga transparan, pengerjaan cepat. Noda kopi hilang total. Mantap!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="carousel-item">
+            <div class="row justify-content-center">
+              <div class="col-lg-8">
+                <div class="quote-card">
+                  <div class="d-flex align-items-center gap-3 mb-2">
+                    <img src="https://i.pravatar.cc/84" alt="Foto pelanggan 3" class="rounded-circle" width="56" height="56" loading="lazy">
+                    <div>
+                      <div class="fw-semibold">Anita S.</div>
+                      <div class="small text-muted">Bintaro</div>
+                    </div>
+                    <div class="ms-auto text-warning"><i class="fa-solid fa-star"></i> 5.0</div>
+                  </div>
+                  <p class="mb-0">Suka sama aromanya, nggak menyengat. Anak-anak jadi betah di sofa lagi.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#testiCarousel" data-bs-slide="prev" aria-label="Sebelumnya">
+          <span class="carousel-control-prev-icon"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#testiCarousel" data-bs-slide="next" aria-label="Berikutnya">
+          <span class="carousel-control-next-icon"></span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Keunggulan & Kelebihan -->
+  <section id="benefits" class="section">
+    <div class="container reveal">
+      <div class="text-center mb-4">
+        <h2 class="section-title">Keunggulan & kelebihan</h2>
+        <p class="section-subtitle">Kami fokus pada kualitas, keamanan bahan, dan pengalaman pelanggan.</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-4" data-aos="fade-up">
+          <div class="feature-card h-100">
+            <img src="img/r1.png" loading="lazy" alt="Bahan aman bersertifikat" />
+            <div class="p-3">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="fa-solid fa-shield-heart text-primary"></i>
+                <h5 class="mb-0">Bahan Aman</h5>
+              </div>
+              <p class="mb-0">Formula ramah keluarga & hewan peliharaan. Tidak merusak serat kain.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="100">
+          <div class="feature-card h-100">
+            <img src="img/r2.png" loading="lazy" alt="Teknisi terlatih dan profesional" />
+            <div class="p-3">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="fa-solid fa-user-check text-primary"></i>
+                <h5 class="mb-0">Teknisi Terlatih</h5>
+              </div>
+              <p class="mb-0">Standard operasi ketat, hasil konsisten, dan komunikasi yang jelas.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="200">
+          <div class="feature-card h-100">
+            <img src="img/r3.png" loading="lazy" alt="Garansi kepuasan pelanggan" />
+            <div class="p-3">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="fa-solid fa-award text-primary"></i>
+                <h5 class="mb-0">Garansi Kepuasan</h5>
+              </div>
+              <p class="mb-0">Jika hasil kurang maksimal, kami perbaiki tanpa biaya tambahan.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+ <!-- lokasi -->
+ <section id="location" class="section">
+  <div class="container reveal">
+    <div class="text-center mb-4">
+      <h2 class="section-title">Lokasi</h2>
+      <p class="section-subtitle">Kami tersedia di kota anda.</p>
+    </div>
+    <div class="row g-4">
+      <div id="map"></div> 
+      
+    </div>
+  </div>
+</section>
+    
+  
+
+  <!-- Penutup / Kontak -->
+  <section id="contact" class="section">
+    <div class="container reveal">
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-6" data-aos="fade-right">
+          <h2 class="section-title">Hubungi kami</h2>
+          <p class="section-subtitle mb-3">Siap jadwalkan pembersihan sofa? Tim kami akan merespons cepat.</p>
+
+          <div class="d-flex align-items-start gap-3 mb-2">
+            <i class="fa-solid fa-phone text-primary fs-5"></i>
+            <div>
+              <div class="fw-semibold">Telepon</div>
+              <a href="tel:+6281280666659">62-812-8066-6659</a>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-start gap-3 mb-2">
+            <i class="fa-solid fa-envelope text-primary fs-5"></i>
+            <div>
+              <div class="fw-semibold">Email</div>
+              <a href="mailto:halo@arnod-clean.com">halo@arnod-clean.com</a>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-start gap-3">
+            <i class="fa-solid fa-location-dot text-primary fs-5"></i>
+            <div>
+              <div class="fw-semibold">Alamat</div>
+              <div>Cluster azzura sepatan blok A6 kecamatan sarakan, sepatan tangerang</div>
+            </div>
+          </div>
+
+          <div class="mt-4 d-flex gap-2">
+            <a class="btn btn-primary" href="#services"><i class="fa-solid fa-list-check me-2"></i>Cek Layanan</a>
+            <button class="btn btn-outline-primary" id="openChat"><i class="fa-brands fa-whatsapp me-2"></i>Chat Cepat</button>
+          </div>
+        </div>
+        <div class="col-lg-6" data-aos="fade-left">
+          <div class="ratio ratio-16x9 rounded-4 shadow-sm">
+            <img src="img/l2.png" loading="lazy" alt="Tim teknisi Arno D Clean sedang bekerja" class="w-100 h-100 object-fit-cover rounded-4">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer py-5">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-4">
+          <h5 class="text-white">Arno D Clean</h5>
+          <p class="mb-2">Jasa cuci sofa profesional, aman, dan bergaransi.</p>
+          <small> <span id="year"></span> Arno D Clean. All rights reserved.</small>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <h6 class="text-white">Navigasi</h6>
+          <ul class="list-unstyled">
+            <li><a href="#home">Beranda</a></li>
+            <li><a href="#services">Produk & Jasa</a></li>
+            <li><a href="#process">Alur Pemesanan</a></li>
+            <li><a href="#testimonials">Testimoni</a></li>
+            <li><a href="#benefits">Keunggulan</a></li>
+            <li><a href="#location">Lokasi</a></li>
+            <li><a href="#contact">Kontak</a></li>
+          </ul>
+        </div>
+        <div class="col-md-6 col-lg-4">
+          <h6 class="text-white">Jam operasional</h6>
+          <p class="mb-1">Senin-Minggu: 24 Jam</p>
+          <!-- <a class="d-inline-flex align-items-center gap-2 mt-2" href="https://goo.gl/maps" target="_blank" rel="noopener">Lihat peta <i class="fa-solid fa-arrow-up-right-from-square"></i></a> -->
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating WA Button -->
+  <button class="wa-float" id="waFloat" aria-label="WhatsApp">
+    <i class="fa-brands fa-whatsapp fs-3"></i>
+  </button>
+
+  <!-- Chat Popup Dummy -->
+  <div class="chat-popup" id="chatPopup" aria-live="polite" aria-hidden="true">
+    <div class="chat-header">
+      <div class="d-flex align-items-center gap-2">
+        <img src="https://i.pravatar.cc/60" alt="Profil admin" class="rounded-circle" width="30" height="30" loading="lazy">
+        <div>
+          <div class="fw-semibold">Admin Arno D Clean</div>
+          <small>Biasanya membalas dalam beberapa menit</small>
+        </div>
+      </div>
+      <button class="btn btn-sm btn-light" id="closeChat" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="chat-body">
+      <div class="chat-bubble">Halo! Ada yang bisa kami bantu? ??</div>
+      <div class="chat-bubble">Sebutkan jenis sofa & lokasi Anda ya.</div>
+    </div>
+    <div class="chat-footer">
+      <textarea id="chatText" placeholder="Tulis pesan Anda..."></textarea>
+      <button class="btn btn-success w-100" id="sendWA"><i class="fa-brands fa-whatsapp me-2"></i>Kirim ke WhatsApp</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script> 
+  <script>
+    // Init AOS
+    AOS.init({ duration: 700, once: false, offset: 80, easing: 'ease-out-cubic' });
+
+    // Year
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Floating WA toggle + open from button
+    const waBtn = document.getElementById('waFloat');
+    const openChatBtn = document.getElementById('openChat');
+    const chat = document.getElementById('chatPopup');
+    const closeChatBtn = document.getElementById('closeChat');
+    const chatText = document.getElementById('chatText');
+    const sendWA = document.getElementById('sendWA');
+
+    const toggleChat = (open) => {
+      chat.classList.toggle('open', open ?? !chat.classList.contains('open'));
+      chat.setAttribute('aria-hidden', chat.classList.contains('open') ? 'false' : 'true');
+      if (chat.classList.contains('open')) chatText.focus();
+    };
+
+    waBtn?.addEventListener('click', () => toggleChat());
+    openChatBtn?.addEventListener('click', () => toggleChat(true));
+    closeChatBtn?.addEventListener('click', () => toggleChat(false));
+
+    // Send to WhatsApp with prefill
+    const phone = '6281280666659'; // ganti ke nomor bisnis Anda (gunakan format internasional tanpa +)
+    sendWA?.addEventListener('click', () => {
+      const text = chatText.value.trim() || 'Halo Arno D Clean, saya ingin tanya layanan & harga.';
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank', 'noopener');
+    });
+
+    // Close chat when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!chat.contains(e.target) && !waBtn.contains(e.target) && e.target !== openChatBtn) {
+        toggleChat(false);
+      }
+    });
+
+    // Custom scroll in/out reveal using IntersectionObserver
+    const reveals = document.querySelectorAll('.reveal');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          entry.target.classList.remove('out');
+        } else {
+          entry.target.classList.remove('in');
+          entry.target.classList.add('out');
+        }
+      });
+    }, { threshold: 0.15 });
+    reveals.forEach(el => io.observe(el));
+
+    // Better parallax on large screens
+    const hero = document.querySelector('.hero');
+    let enableParallax = window.matchMedia('(min-width: 992px)').matches;
+    const onScroll = () => {
+      if (!enableParallax) return;
+      const y = window.scrollY;
+      hero.style.backgroundPositionY = `${Math.round(y * 0.4)}px`;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', () => {
+      enableParallax = window.matchMedia('(min-width: 992px)').matches;
+    });
+
+    // Improve keyboard focus for scrollspy
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', () => {
+        const id = a.getAttribute('href');
+        const target = document.querySelector(id);
+        if (target) target.setAttribute('tabindex','-1');
+      });
+    });
+
+     // Inisialisasi peta di tengah Tangerang metro area
+     var map = L.map('map').setView([-6.22, 106.66], 11);
+  
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Fungsi untuk memilih warna icon berdasarkan area
+  function iconFor(area){
+    var colors = {
+      'Kota Tangerang':'blue',
+      'Kabupaten Tangerang':'green',
+      'Tangerang Selatan':'orange',
+      'Jakarta Barat':'purple',
+      'Jakarta Selatan':'red'
+    };
+    var c = colors[area] || 'gray';
+    return L.divIcon({className: 'custom-marker', html: '<div style="background:'+c+';width:14px;height:14px;border-radius:7px;border:2px solid white;"></div>', iconSize: [18,18], iconAnchor: [9,9]});
+  }
+
+  // Cluster group untuk mengelola banyak marker
+  var markers = L.markerClusterGroup();
+
+  // Daftar >100 lokasi (nama, coords, area)
+  var locations = [
+    // --- Kota Tangerang (20) ---
+    {name: 'Citra Raya', coords: [-6.2455,106.5316], area: 'Kota Tangerang'},
+    {name: 'Karawaci', coords: [-6.1978,106.6189], area: 'Kota Tangerang'},
+    {name: 'Cipondoh', coords: [-6.1881,106.7132], area: 'Kota Tangerang'},
+    {name: 'Poris', coords: [-6.1743,106.6885], area: 'Kota Tangerang'},
+    {name: 'Perum (Perumnas area)', coords: [-6.1637,106.6383], area: 'Kota Tangerang'},
+    {name: 'Pinang', coords: [-6.1860,106.6435], area: 'Kota Tangerang'},
+    {name: 'Neglasari', coords: [-6.1400,106.6210], area: 'Kota Tangerang'},
+    {name: 'Tanah Tinggi (Tangerang)', coords: [-6.1845,106.6152], area: 'Kota Tangerang'},
+    {name: 'Sukaasih', coords: [-6.1802,106.6034], area: 'Kota Tangerang'},
+    {name: 'Sukarasa', coords: [-6.1705,106.6058], area: 'Kota Tangerang'},
+    {name: 'Karawaci Baru', coords: [-6.2040,106.6170], area: 'Kota Tangerang'},
+    {name: 'Benda (Tangerang)', coords: [-6.1560,106.6550], area: 'Kota Tangerang'},
+    {name: 'Kebon Nanas (Tangerang)', coords: [-6.1921,106.6124], area: 'Kota Tangerang'},
+    {name: 'Ciledug (pinggiran)', coords: [-6.1700,106.7540], area: 'Kota Tangerang'},
+    {name: 'Kota Bumi', coords: [-6.1915,106.5928], area: 'Kota Tangerang'},
+    {name: 'Sukaresmi', coords: [-6.1990,106.6290], area: 'Kota Tangerang'},
+    {name: 'Cibodas (Tangerang)', coords: [-6.1932,106.7001], area: 'Kota Tangerang'},
+    {name: 'Cipadu', coords: [-6.1510,106.6780], area: 'Kota Tangerang'},
+    {name: 'Karangturi', coords: [-6.1622,106.6419], area: 'Kota Tangerang'},
+    {name: 'Mekar Baru', coords: [-6.2100,106.5900], area: 'Kota Tangerang'},
+
+    // --- Kabupaten Tangerang (20) ---
+    {name: 'Pasar Kemis', coords: [-6.1406,106.5581], area: 'Kabupaten Tangerang'},
+    {name: 'Panongan', coords: [-6.2587,106.5565], area: 'Kabupaten Tangerang'},
+    {name: 'Balaraja', coords: [-6.2660,106.5740], area: 'Kabupaten Tangerang'},
+    {name: 'Legok', coords: [-6.2930,106.6490], area: 'Kabupaten Tangerang'},
+    {name: 'Sukamulya', coords: [-6.2300,106.5900], area: 'Kabupaten Tangerang'},
+    {name: 'Kresek', coords: [-6.1520,106.3950], area: 'Kabupaten Tangerang'},
+    {name: 'Gading Serpong (pinggiran)', coords: [-6.2400,106.6500], area: 'Kabupaten Tangerang'},
+    {name: 'Jayanti', coords: [-6.1830,106.4250], area: 'Kabupaten Tangerang'},
+    {name: 'Sukadiri', coords: [-6.1000,106.4000], area: 'Kabupaten Tangerang'},
+    {name: 'Sepatan', coords: [-6.1180,106.4470], area: 'Kabupaten Tangerang'},
+    {name: 'Mauk', coords: [-6.0670,106.4640], area: 'Kabupaten Tangerang'},
+    {name: 'Rajeg', coords: [-6.2140,106.5200], area: 'Kabupaten Tangerang'},
+    {name: 'Cikupa', coords: [-6.1508,106.5568], area: 'Kabupaten Tangerang'},
+    {name: 'Tigaraksa', coords: [-6.1750,106.5400], area: 'Kabupaten Tangerang'},
+    {name: 'Kosambi', coords: [-6.0530,106.6290], area: 'Kabupaten Tangerang'},
+    {name: 'Sukadana', coords: [-6.2000,106.4800], area: 'Kabupaten Tangerang'},
+    {name: 'Panongan Barat', coords: [-6.2570,106.5480], area: 'Kabupaten Tangerang'},
+    {name: 'Pakuhaji', coords: [-6.1490,106.5800], area: 'Kabupaten Tangerang'},
+    {name: 'Sepatan Timur', coords: [-6.1005,106.4702], area: 'Kabupaten Tangerang'},
+    {name: 'Kresek Selatan', coords: [-6.1600,106.4100], area: 'Kabupaten Tangerang'},
+
+    // --- Tangerang Selatan / South Tangerang (25) ---
+    {name: 'BSD City', coords: [-6.2976,106.6843], area: 'Tangerang Selatan'},
+    {name: 'Serpong', coords: [-6.3172,106.6676], area: 'Tangerang Selatan'},
+    {name: 'Serpong Utara', coords: [-6.2950,106.6510], area: 'Tangerang Selatan'},
+    {name: 'Pamulang', coords: [-6.2800,106.7430], area: 'Tangerang Selatan'},
+    {name: 'Ciputat', coords: [-6.2540,106.7810], area: 'Tangerang Selatan'},
+    {name: 'Ciputat Timur', coords: [-6.2565,106.7902], area: 'Tangerang Selatan'},
+    {name: 'Pondok Aren', coords: [-6.2910,106.7440], area: 'Tangerang Selatan'},
+    {name: 'Bintaro (pinggiran)', coords: [-6.2605,106.7200], area: 'Tangerang Selatan'},
+    {name: 'Setu', coords: [-6.3290,106.7820], area: 'Tangerang Selatan'},
+    {name: 'Cilenggang', coords: [-6.3020,106.7220], area: 'Tangerang Selatan'},
+    {name: 'Rawa Buntu', coords: [-6.2870,106.6990], area: 'Tangerang Selatan'},
+    {name: 'Lengkong Gudang', coords: [-6.3250,106.7250], area: 'Tangerang Selatan'},
+    {name: 'Jurang Mangu', coords: [-6.2620,106.7340], area: 'Tangerang Selatan'},
+    {name: 'Bojong', coords: [-6.2700,106.7600], area: 'Tangerang Selatan'},
+    {name: 'Rengas', coords: [-6.3050,106.7000], area: 'Tangerang Selatan'},
+    {name: 'Serua', coords: [-6.2955,106.7598], area: 'Tangerang Selatan'},
+    {name: 'Cisauk', coords: [-6.2690,106.6210], area: 'Tangerang Selatan'},
+    {name: 'Lengkong Wetan', coords: [-6.3200,106.6700], area: 'Tangerang Selatan'},
+    {name: 'Summarecon Serpong (area)', coords: [-6.2350,106.6250], area: 'Tangerang Selatan'},
+    {name: 'BSD Timur', coords: [-6.2850,106.7000], area: 'Tangerang Selatan'},
+    {name: 'Pondok Cabe', coords: [-6.3330,106.7830], area: 'Tangerang Selatan'},
+    {name: 'Lengkong Kulon', coords: [-6.3100,106.6950], area: 'Tangerang Selatan'},
+    {name: 'Rawa Buntu Timur', coords: [-6.2895,106.7102], area: 'Tangerang Selatan'},
+    {name: 'Buaran', coords: [-6.3180,106.6600], area: 'Tangerang Selatan'},
+    {name: 'Kedaung', coords: [-6.2805,106.7305], area: 'Tangerang Selatan'},
+
+    // --- Jakarta Barat (18) ---
+    {name: 'Kebon Jeruk (WB edge)', coords: [-6.1720,106.7710], area: 'Jakarta Barat'},
+    {name: 'Grogol', coords: [-6.1570,106.7970], area: 'Jakarta Barat'},
+    {name: 'Kembangan', coords: [-6.1600,106.7680], area: 'Jakarta Barat'},
+    {name: 'Tanjung Duren', coords: [-6.1750,106.7940], area: 'Jakarta Barat'},
+    {name: 'Tambora (edge)', coords: [-6.1420,106.7990], area: 'Jakarta Barat'},
+    {name: 'Pesing', coords: [-6.1425,106.7685], area: 'Jakarta Barat'},
+    {name: 'Cengkareng (pinggiran)', coords: [-6.1450,106.7580], area: 'Jakarta Barat'},
+    {name: 'Duri Kepa', coords: [-6.1860,106.7820], area: 'Jakarta Barat'},
+    {name: 'Palmerah', coords: [-6.1970,106.7980], area: 'Jakarta Barat'},
+    {name: 'Kapasari', coords: [-6.1330,106.8050], area: 'Jakarta Barat'},
+    {name: 'Kebon Kacang (pinggiran)', coords: [-6.2000,106.8200], area: 'Jakarta Barat'},
+    {name: 'Puri Indah area', coords: [-6.1680,106.7490], area: 'Jakarta Barat'},
+    {name: 'Kalideres (edge)', coords: [-6.1470,106.7030], area: 'Jakarta Barat'},
+    {name: 'Pegadungan', coords: [-6.1565,106.7505], area: 'Jakarta Barat'},
+    {name: 'Pesanggrahan (barat area)', coords: [-6.1780,106.7450], area: 'Jakarta Barat'},
+    {name: 'Ancol Barat (pinggiran)', coords: [-6.1200,106.8250], area: 'Jakarta Barat'},
+    {name: 'Tomang', coords: [-6.1805,106.8030], area: 'Jakarta Barat'},
+    {name: 'Rawa Buaya', coords: [-6.1350,106.7350], area: 'Jakarta Barat'},
+
+    // --- Jakarta Selatan (27) ---
+    {name: 'Kebayoran Lama (pinggiran)', coords: [-6.2200,106.7850], area: 'Jakarta Selatan'},
+    {name: 'Blok M', coords: [-6.2250,106.8030], area: 'Jakarta Selatan'},
+    {name: 'Cilandak', coords: [-6.2980,106.7920], area: 'Jakarta Selatan'},
+    {name: 'Pancoran (edge)', coords: [-6.2290,106.8600], area: 'Jakarta Selatan'},
+    {name: 'Mampang Prapatan', coords: [-6.2300,106.8210], area: 'Jakarta Selatan'},
+    {name: 'Tebet', coords: [-6.2170,106.8450], area: 'Jakarta Selatan'},
+    {name: 'Kuningan (selatan area)', coords: [-6.2200,106.8270], area: 'Jakarta Selatan'},
+    {name: 'Pasar Minggu (utara edge)', coords: [-6.2820,106.8430], area: 'Jakarta Selatan'},
+    {name: 'Kalibata', coords: [-6.2380,106.8560], area: 'Jakarta Selatan'},
+    {name: 'Warung Buncit', coords: [-6.2600,106.8300], area: 'Jakarta Selatan'},
+    {name: 'Cipete', coords: [-6.2650,106.8060], area: 'Jakarta Selatan'},
+    {name: 'Senayan (selatan area)', coords: [-6.2240,106.8060], area: 'Jakarta Selatan'},
+    {name: 'Kebayoran Baru', coords: [-6.2340,106.8065], area: 'Jakarta Selatan'},
+    {name: 'Pondok Indah (pinggiran)', coords: [-6.2550,106.7950], area: 'Jakarta Selatan'},
+    {name: 'Gunung', coords: [-6.2500,106.8200], area: 'Jakarta Selatan'},
+    {name: 'Cipete Utara', coords: [-6.2625,106.8068], area: 'Jakarta Selatan'},
+    {name: 'Lebak Bulus', coords: [-6.3020,106.7825], area: 'Jakarta Selatan'},
+    {name: 'Gandaria', coords: [-6.2385,106.8035], area: 'Jakarta Selatan'},
+    {name: 'Sukabumi Selatan (edge)', coords: [-6.2825,106.8150], area: 'Jakarta Selatan'},
+    {name: 'Kebayoran Baru Selatan', coords: [-6.2388,106.8052], area: 'Jakarta Selatan'},
+    {name: 'Ragunan (utara)', coords: [-6.3130,106.8260], area: 'Jakarta Selatan'},
+    {name: 'Cilandak Timur', coords: [-6.2940,106.8090], area: 'Jakarta Selatan'},
+    {name: 'Bintaro Sektor 1 (dekat)', coords: [-6.2560,106.7190], area: 'Jakarta Selatan'},
+    {name: 'Pondok Labu (edge)', coords: [-6.3250,106.7940], area: 'Jakarta Selatan'},
+    {name: 'Cipete Selatan', coords: [-6.2680,106.8030], area: 'Jakarta Selatan'}
+  ];
+
+  // Tambahkan semua marker ke cluster group
+  locations.forEach(function(loc){
+    var m = L.marker(loc.coords, {icon: iconFor(loc.area)});
+    var popup = '<b>' + loc.name + '</b><br><i>' + loc.area + '</i><br>Lat: ' + loc.coords[0].toFixed(6) + ', Lon: ' + loc.coords[1].toFixed(6);
+    m.bindPopup(popup);
+    markers.addLayer(m);
+  });
+
+  map.addLayer(markers);
+
+  // Legend sederhana
+  var legend = L.control({position: 'bottomright'});
+  legend.onAdd = function(map){
+    var div = L.DomUtil.create('div', 'legend');
+    div.innerHTML = '<b>Area</b><br>' +
+      '<span style="display:inline-block;width:12px;height:12px;background:blue;margin-right:6px;border-radius:6px;border:2px solid white"></span>Kota Tangerang<br>' +
+      '<span style="display:inline-block;width:12px;height:12px;background:green;margin-right:6px;border-radius:6px;border:2px solid white"></span>Kabupaten Tangerang<br>' +
+      '<span style="display:inline-block;width:12px;height:12px;background:orange;margin-right:6px;border-radius:6px;border:2px solid white"></span>Tangerang Selatan<br>' +
+      '<span style="display:inline-block;width:12px;height:12px;background:purple;margin-right:6px;border-radius:6px;border:2px solid white"></span>Jakarta Barat<br>' +
+      '<span style="display:inline-block;width:12px;height:12px;background:red;margin-right:6px;border-radius:6px;border:2px solid white"></span>Jakarta Selatan<br>';
+    return div;
+  };
+  legend.addTo(map);
+
+  // Fit peta agar mencakup semua marker
+  map.fitBounds(markers.getBounds(), {padding: [40,40]});
+
+  </script>
+</body>
+</html>

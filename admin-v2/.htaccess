@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Allow direct access to dist/assets
+RewriteRule ^assets/(.*)$ dist/assets/$1 [L]
+
+# SPA HTML5 History fallback
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^.*$ dist/index.html [L]

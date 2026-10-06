@@ -1,0 +1,27 @@
+RewriteEngine On
+# PRODUCTION SETTING: Base is root "/" for arnod-clean.com
+RewriteBase /
+
+# --- SECURITY ---
+# Disable Directory Browsing
+Options -Indexes
+
+# Block Sensitive Files
+<FilesMatch "^\.(env|git|idea|vscode)|config\.php|db\.php|composer\.json|composer\.lock">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Headers
+<IfModule mod_headers.c>
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+
+# --- SEO PRETTY URLS ---
+# Map http://arnod-clean.com/blog/slug-judul -> article.php?slug=slug-judul
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^blog/([a-zA-Z0-9-]+)$ article.php?slug=$1 [L,QSA]
