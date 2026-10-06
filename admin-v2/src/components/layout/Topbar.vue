@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { getImageUrl } from '@/utils/image'
@@ -20,6 +20,16 @@ const emit = defineEmits<{
 const router = useRouter()
 const authStore = useAuthStore()
 const isProfileMenuOpen = ref(false)
+
+const publicWebUrl = computed(() => {
+  if (typeof window !== 'undefined') {
+    const path = window.location.pathname
+    const match = path.match(/^(.*?)\/admin-v2(?:\/.*)?$/)
+    const prefix = match ? match[1] : ''
+    return prefix ? `${prefix}/` : '/'
+  }
+  return '/'
+})
 
 async function handleLogout() {
   await authStore.logout()
@@ -52,7 +62,7 @@ async function handleLogout() {
     <div class="flex items-center gap-2 sm:gap-4">
       <!-- Public Website Link -->
       <a
-        href="/"
+        :href="publicWebUrl"
         target="_blank"
         class="p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50/70 border border-slate-200/80 transition-all flex items-center gap-1.5"
         title="Lihat Website Publik"

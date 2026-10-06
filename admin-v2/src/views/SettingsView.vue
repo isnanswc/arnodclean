@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { apiClient as axios } from '@/api/client'
 import { getImageUrl } from '@/utils/image'
 import {
@@ -33,11 +33,19 @@ import {
   Layers,
   Camera,
   ChevronRight,
+  ChevronLeft,
+  ChevronUp,
+  ChevronDown,
   Sparkle,
   Radio,
   FileCheck,
   Clock,
-  ExternalLink
+  ExternalLink,
+  SlidersHorizontal,
+  MapPin,
+  Mail,
+  FileText,
+  Database
 } from 'lucide-vue-next'
 
 type SettingTab = 'hero' | 'identity' | 'whatsapp' | 'ai' | 'strategy' | 'telegram' | 'system'
@@ -605,13 +613,124 @@ async function saveCurrentTab() {
   }
 }
 
+// Mobile Stacked Sheet Drawer & Quick Navigation
+const showMobileSheetDrawer = ref(false)
+const activeTabIndex = computed(() => tabs.findIndex(t => t.id === activeTab.value))
+
+function goToPrevTab() {
+  if (activeTabIndex.value > 0) {
+    activeTab.value = tabs[activeTabIndex.value - 1].id
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+function goToNextTab() {
+  if (activeTabIndex.value < tabs.length - 1) {
+    activeTab.value = tabs[activeTabIndex.value + 1].id
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+function selectTabFromDrawer(id: SettingTab) {
+  activeTab.value = id
+  showMobileSheetDrawer.value = false
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// Interactive Organic Floating & Popping Bubble Engine on Scroll
+interface BubbleParticle {
+  id: number
+  x: number
+  bottom: number
+  size: number
+  borderRadius: string
+  floatDistance: number
+  duration: number
+  swayDistance: number
+  isPopping: boolean
+  hue: number
+}
+
+const activeBubbles = ref<BubbleParticle[]>([])
+let nextBubbleId = 0
+let lastScrollY = 0
+let bubbleSpawnThrottle = 0
+
+function createBubble() {
+  const id = nextBubbleId++
+  const x = Math.floor(Math.random() * 88) + 6 // 6% to 94% horizontal span
+  const bottom = Math.floor(Math.random() * 45) + 20 // 20px to 65px above bottom
+  const size = Math.floor(Math.random() * 32) + 24 // 24px to 56px diameter
+
+  // Varied organic blob radii (curved soap bubble surface)
+  const r = () => Math.floor(Math.random() * 26) + 37 // 37% to 63%
+  const borderRadius = `${r()}% ${100 - r()}% ${r()}% ${100 - r()}% / ${r()}% ${r()}% ${100 - r()}% ${100 - r()}%`
+
+  const floatDistance = Math.floor(Math.random() * 160) + 160 // 160px to 320px vertical float
+  const duration = +(Math.random() * 0.9 + 1.2).toFixed(2) // 1.2s to 2.1s duration
+  const swayDistance = Math.floor((Math.random() - 0.5) * 44) // -22px to +22px sinusoidal sway
+  const hue = Math.floor(Math.random() * 90) + 190 // 190 to 280 (cyan/sky/indigo/violet iridescent)
+
+  const bubble: BubbleParticle = {
+    id,
+    x,
+    bottom,
+    size,
+    borderRadius,
+    floatDistance,
+    duration,
+    swayDistance,
+    isPopping: false,
+    hue
+  }
+
+  activeBubbles.value.push(bubble)
+
+  // Trigger burst/pop after float duration expires
+  setTimeout(() => {
+    const target = activeBubbles.value.find(b => b.id === id)
+    if (target) {
+      target.isPopping = true
+      // Remove after pop burst animation finishes (280ms)
+      setTimeout(() => {
+        activeBubbles.value = activeBubbles.value.filter(b => b.id !== id)
+      }, 280)
+    }
+  }, duration * 1000)
+}
+
+function handleScroll() {
+  const currentScrollY = window.scrollY || document.documentElement.scrollTop
+  const delta = Math.abs(currentScrollY - lastScrollY)
+  lastScrollY = currentScrollY
+
+  const now = performance.now()
+  if (now - bubbleSpawnThrottle < 110 && delta < 35) return
+  bubbleSpawnThrottle = now
+
+  if (activeBubbles.value.length >= 22) return
+
+  // Spawn 1 to 3 organic bubbles per scroll event based on velocity
+  const count = Math.min(Math.floor(delta / 40) + 1, 3)
+  for (let i = 0; i < count; i++) {
+    if (activeBubbles.value.length >= 22) break
+    createBubble()
+  }
+}
+
 onMounted(() => {
   fetchSettings()
+  window.addEventListener('scroll', handleScroll, { passive: true })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll)
+  activeBubbles.value = []
 })
 </script>
 
 <template>
-  <div class="space-y-6 animate-fadeIn pb-16">
+  <div class="space-y-6 animate-fadeIn pb-36 lg:pb-16 relative">
     <!-- Toast Notification -->
     <div
       v-if="toast.show"
@@ -732,27 +851,202 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- MOBILE & TABLET COMPACT NAVIGATION (Zero-Slide Responsive Grid) -->
-    <div class="lg:hidden">
-      <div class="bg-white rounded-3xl p-3 border border-slate-100 shadow-subtle space-y-2">
-        <div class="flex items-center justify-between px-2 pt-1">
-          <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Pilih Bagian Pengaturan:</span>
-          <span class="text-[11px] text-blue-600 font-semibold">{{ tabs.find(t => t.id === activeTab)?.title }}</span>
+    <!-- INTERACTIVE FLOATING & POPPING BUBBLES ON SCROLL -->
+    <div class="fixed inset-0 pointer-events-none z-50 overflow-hidden" aria-hidden="true">
+      <div
+        v-for="b in activeBubbles"
+        :key="b.id"
+        class="bubble-particle"
+        :class="{ 'bubble-popping': b.isPopping }"
+        :style="{
+          left: `${b.x}%`,
+          bottom: `${b.bottom}px`,
+          width: `${b.size}px`,
+          height: `${b.size}px`,
+          borderRadius: b.borderRadius,
+          '--float-dist': `${b.floatDistance}px`,
+          '--sway-dist': `${b.swayDistance}px`,
+          '--float-dur': `${b.duration}s`,
+          '--bubble-hue': `${b.hue}`
+        }"
+      >
+        <!-- Burst Droplets Splash when Popping -->
+        <div v-if="b.isPopping" class="bubble-droplets">
+          <span class="bubble-drop d-t"></span>
+          <span class="bubble-drop d-r"></span>
+          <span class="bubble-drop d-b"></span>
+          <span class="bubble-drop d-l"></span>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+      </div>
+    </div>
+
+    <!-- MOBILE ACTIVE SHEET SUMMARY PILL (Top Breadcrumb) -->
+    <div class="lg:hidden bg-white/90 backdrop-blur-md rounded-2xl p-3 border border-slate-200/80 shadow-xs flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div
+          class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 font-bold"
+          :class="tabs.find(t => t.id === activeTab)?.color || 'bg-blue-50 text-blue-600'"
+        >
+          <component :is="tabs.find(t => t.id === activeTab)?.icon" class="w-4 h-4" />
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Lembar {{ activeTabIndex + 1 }}/{{ tabs.length }}:</span>
+            <span class="text-xs font-bold text-slate-900 truncate">{{ tabs.find(t => t.id === activeTab)?.title }}</span>
+          </div>
+          <p class="text-[10px] text-slate-400 truncate">{{ tabs.find(t => t.id === activeTab)?.subtitle }}</p>
+        </div>
+      </div>
+      <button
+        type="button"
+        @click="showMobileSheetDrawer = true"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold flex-shrink-0 transition-all border border-blue-200/60 shadow-2xs"
+      >
+        <Layers class="w-3.5 h-3.5" />
+        <span>Ganti Sheet</span>
+      </button>
+    </div>
+
+    <!-- MOBILE DOCKED SHEET CONTROLLER (Right Above Bottom Navbar, No Horizontal Scroll!) -->
+    <div class="lg:hidden fixed bottom-16 sm:bottom-[4.5rem] inset-x-3 sm:inset-x-6 z-40 max-w-lg mx-auto pointer-events-auto">
+      <div class="bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-2xl shadow-xl shadow-slate-900/10 p-1.5 flex items-center justify-between gap-2">
+        <!-- Prev Button -->
+        <button
+          type="button"
+          @click="goToPrevTab"
+          :disabled="activeTabIndex === 0"
+          class="p-2.5 rounded-xl text-slate-600 hover:bg-slate-100 disabled:opacity-25 transition-all flex items-center justify-center"
+          title="Lembar Sebelumnya"
+        >
+          <ChevronLeft class="w-4 h-4" />
+        </button>
+
+        <!-- Center Sheet Selector Button -->
+        <button
+          type="button"
+          @click="showMobileSheetDrawer = true"
+          class="flex-1 flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/70 transition-all text-left"
+        >
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div
+              class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              :class="tabs.find(t => t.id === activeTab)?.color"
+            >
+              <component :is="tabs.find(t => t.id === activeTab)?.icon" class="w-3.5 h-3.5" />
+            </div>
+            <div class="min-w-0">
+              <span class="text-xs font-bold text-slate-800 block truncate leading-tight">
+                {{ tabs.find(t => t.id === activeTab)?.title }}
+              </span>
+              <span class="text-[10px] text-slate-400 block font-medium">
+                Lembar {{ activeTabIndex + 1 }} dari {{ tabs.length }} • Sentuh untuk ganti
+              </span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 text-blue-600 flex-shrink-0 pl-1">
+            <SlidersHorizontal class="w-3.5 h-3.5" />
+            <ChevronUp class="w-3.5 h-3.5" />
+          </div>
+        </button>
+
+        <!-- Next Button -->
+        <button
+          type="button"
+          @click="goToNextTab"
+          :disabled="activeTabIndex === tabs.length - 1"
+          class="p-2.5 rounded-xl text-slate-600 hover:bg-slate-100 disabled:opacity-25 transition-all flex items-center justify-center"
+          title="Lembar Selanjutnya"
+        >
+          <ChevronRight class="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+
+    <!-- MOBILE STACKED SHEET MENU DRAWER (Vertical Stack, Zero Horizontal Scroll!) -->
+    <div
+      v-if="showMobileSheetDrawer"
+      class="lg:hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-3 sm:p-4 animate-fadeIn"
+      @click.self="showMobileSheetDrawer = false"
+    >
+      <div class="w-full max-w-lg bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden max-h-[82vh] flex flex-col mb-16 sm:mb-0">
+        <!-- Drawer Header -->
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <Layers class="w-4 h-4 text-blue-600" />
+              <span>Daftar Menu Lembar Pengaturan</span>
+            </h3>
+            <p class="text-[11px] text-slate-500">7 lembar tersusun rapi tanpa perlu geser horizontal</p>
+          </div>
           <button
-            v-for="t in tabs"
+            type="button"
+            @click="showMobileSheetDrawer = false"
+            class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <!-- Vertically Stacked Sheets List -->
+        <div class="p-3 space-y-1.5 overflow-y-auto max-h-[62vh]">
+          <button
+            v-for="(t, idx) in tabs"
             :key="t.id"
-            @click="activeTab = t.id"
-            class="flex items-center gap-2 px-3 py-2.5 rounded-2xl text-xs font-semibold transition-all text-left"
+            type="button"
+            @click="selectTabFromDrawer(t.id)"
+            class="w-full flex items-center justify-between p-3 rounded-2xl text-left transition-all border"
             :class="
               activeTab === t.id
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60'
+                ? 'bg-blue-50/90 border-blue-200 shadow-xs text-blue-900'
+                : 'bg-white hover:bg-slate-50 border-slate-100 text-slate-700'
             "
           >
-            <component :is="t.icon" class="w-4 h-4 flex-shrink-0" :class="activeTab === t.id ? 'text-white' : 'text-slate-500'" />
-            <span class="truncate">{{ t.title.split(' ')[0] }}</span>
+            <div class="flex items-center gap-3 min-w-0">
+              <div
+                class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+                :class="activeTab === t.id ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20' : t.color"
+              >
+                <component :is="t.icon" class="w-5 h-5" />
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md" :class="activeTab === t.id ? 'bg-blue-200/60 text-blue-800' : 'bg-slate-100 text-slate-500'">
+                    #{{ idx + 1 }}
+                  </span>
+                  <span class="font-bold text-xs truncate" :class="activeTab === t.id ? 'text-blue-950 font-bold' : 'text-slate-800'">
+                    {{ t.title }}
+                  </span>
+                  <span v-if="t.badge" class="px-1.5 py-0.2 rounded-md bg-violet-100 text-violet-700 text-[9px] font-bold">
+                    {{ t.badge }}
+                  </span>
+                </div>
+                <p class="text-[11px] truncate mt-0.5" :class="activeTab === t.id ? 'text-blue-700/80' : 'text-slate-400'">
+                  {{ t.subtitle }}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex-shrink-0 pl-2">
+              <div
+                v-if="activeTab === t.id"
+                class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs"
+              >
+                <Check class="w-3.5 h-3.5" />
+              </div>
+              <ChevronRight v-else class="w-4 h-4 text-slate-300" />
+            </div>
+          </button>
+        </div>
+
+        <!-- Drawer Footer -->
+        <div class="p-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+          <span class="text-[11px] text-slate-400">Total 7 lembar konfigurasi</span>
+          <button
+            type="button"
+            @click="showMobileSheetDrawer = false"
+            class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-all"
+          >
+            Tutup
           </button>
         </div>
       </div>
@@ -869,6 +1163,17 @@ onMounted(() => {
                 ></textarea>
               </div>
 
+              <!-- Separator: Tombol Aksi (CTA) -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <Sparkles class="w-3.5 h-3.5 text-blue-600" />
+                  <span>Tombol Aksi (Call To Action)</span>
+                </div>
+              </div>
+
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-1.5">
                   <label class="font-bold text-slate-700">Teks Tombol Utama (CTA 1):</label>
@@ -887,6 +1192,17 @@ onMounted(() => {
                     class="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 font-semibold"
                     placeholder="Hubungi Kami"
                   />
+                </div>
+              </div>
+
+              <!-- Separator: Media Latar Belakang Banner -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <ImageIcon class="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Media Latar Belakang (Hero Banner)</span>
                 </div>
               </div>
 
@@ -949,6 +1265,17 @@ onMounted(() => {
                 </div>
               </div>
 
+              <!-- Separator: Alamat & Kontak Workshop -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <MapPin class="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Workshop & Alamat Resmi</span>
+                </div>
+              </div>
+
               <div class="space-y-1.5">
                 <label class="font-bold text-slate-700">Email Bisnis Resmi:</label>
                 <input
@@ -967,6 +1294,17 @@ onMounted(() => {
                   class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 leading-relaxed"
                   placeholder="Jl. Raya Serpong No. ..., Tangerang Selatan"
                 ></textarea>
+              </div>
+
+              <!-- Separator: Identitas Visual & Branding -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <ImageIcon class="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Identitas Visual & Branding</span>
+                </div>
               </div>
 
               <!-- Logo & Favicon in Clean Grid -->
@@ -1030,6 +1368,17 @@ onMounted(() => {
                   <p class="text-[11px] text-emerald-800/90 mt-0.5 leading-relaxed">
                     Sistem mendukung variabel <code>[nama layanan]</code> atau <code>{service}</code>. Nilai tersebut otomatis diganti dengan layanan spesifik yang diklik pengunjung.
                   </p>
+                </div>
+              </div>
+
+              <!-- Separator: Template Teks Pesan WhatsApp -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <MessageCircle class="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Template Teks Percakapan WhatsApp</span>
                 </div>
               </div>
 
@@ -1122,6 +1471,17 @@ onMounted(() => {
                       <div v-if="aiForm.ai_active_provider === 'groq'" class="w-2.5 h-2.5 rounded-full bg-rose-600"></div>
                     </div>
                   </label>
+                </div>
+              </div>
+
+              <!-- Separator: Google Gemini Engine -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <Bot class="w-3.5 h-3.5 text-blue-600" />
+                  <span>Mesin Google Gemini & Rotasi Failover Kunci API</span>
                 </div>
               </div>
 
@@ -1271,6 +1631,17 @@ onMounted(() => {
                 </div>
               </div>
 
+              <!-- Separator: Groq LLaMA Engine -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <Zap class="w-3.5 h-3.5 text-rose-600" />
+                  <span>Mesin Groq Cloud (LLaMA 3) & Akselerasi LPU</span>
+                </div>
+              </div>
+
               <!-- GROQ LLaMA CONFIG PANEL -->
               <div class="p-5 rounded-3xl border border-rose-100 bg-rose-50/20 space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-rose-100">
@@ -1416,6 +1787,17 @@ onMounted(() => {
                 </div>
               </div>
 
+              <!-- Separator: Persona & Prompt Template -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <FileText class="w-3.5 h-3.5 text-violet-600" />
+                  <span>Persona AI & Template Penulisan Konten</span>
+                </div>
+              </div>
+
               <!-- System Instruction & Persona -->
               <div class="space-y-1.5">
                 <label class="font-bold text-slate-700">System Instruction (Persona AI):</label>
@@ -1484,6 +1866,17 @@ onMounted(() => {
                   </div>
                   <input type="checkbox" v-model="aiForm.ai_image_keep_people" class="rounded text-blue-600 w-4 h-4" />
                 </label>
+              </div>
+
+              <!-- Separator: Prioritas Sumber Gambar Cover -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <Camera class="w-3.5 h-3.5 text-amber-600" />
+                  <span>Hierarki Penyedia Gambar Cover (Failover Fallback)</span>
+                </div>
               </div>
 
               <!-- Image Priority Fallback List -->
@@ -1601,6 +1994,17 @@ onMounted(() => {
                 </div>
               </div>
 
+              <!-- Separator: Kredensial Bot Telegram -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <Key class="w-3.5 h-3.5 text-sky-600" />
+                  <span>Kredensial Bot Token & Chat ID Penerima</span>
+                </div>
+              </div>
+
               <!-- Bot Token & Chat ID -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="space-y-1.5">
@@ -1621,6 +2025,17 @@ onMounted(() => {
                     class="w-full px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 font-mono text-xs"
                     placeholder="-100123456789 (bisa pisah koma)"
                   />
+                </div>
+              </div>
+
+              <!-- Separator: Penjadwalan Laporan Rekap Otomatis -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <Clock class="w-3.5 h-3.5 text-sky-600" />
+                  <span>Penjadwalan Laporan Rekap Otomatis</span>
                 </div>
               </div>
 
@@ -1664,7 +2079,16 @@ onMounted(() => {
                 </button>
               </div>
 
-              <hr class="border-slate-100" />
+              <!-- Separator: Integrasi Webhook Respons Interaktif -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <Globe class="w-3.5 h-3.5 text-sky-600" />
+                  <span>Integrasi Webhook Respons Interaktif Telegram</span>
+                </div>
+              </div>
 
               <!-- Telegram Webhook Registration -->
               <div class="p-5 rounded-3xl border border-sky-100 bg-sky-50/40 space-y-4">
@@ -1756,7 +2180,16 @@ onMounted(() => {
                 </div>
               </div>
 
-              <hr class="border-slate-100" />
+              <!-- Separator: Pemeliharaan Basis Data & Log -->
+              <div class="relative py-2.5 my-3 flex items-center justify-center">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200/80 bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
+                </div>
+                <div class="relative px-3.5 py-1 bg-white border border-slate-200/90 rounded-full shadow-2xs flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                  <Database class="w-3.5 h-3.5 text-slate-600" />
+                  <span>Pemeliharaan Basis Data & Siklus Retensi Log</span>
+                </div>
+              </div>
 
               <!-- Database Maintenance -->
               <div class="space-y-3">
@@ -1824,5 +2257,169 @@ onMounted(() => {
 
 .shadow-xs {
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.shadow-2xs {
+  box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+/* Silky Smooth Scrollbar */
+:global(html) {
+  scroll-behavior: smooth;
+}
+
+:global(::-webkit-scrollbar) {
+  width: 6px;
+  height: 6px;
+}
+:global(::-webkit-scrollbar-track) {
+  background: rgba(241, 245, 249, 0.7);
+  border-radius: 9999px;
+}
+:global(::-webkit-scrollbar-thumb) {
+  background: linear-gradient(180deg, #93c5fd 0%, #60a5fa 100%);
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+}
+:global(::-webkit-scrollbar-thumb:hover) {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+}
+:global(*) {
+  scrollbar-width: thin;
+  scrollbar-color: #93c5fd rgba(241, 245, 249, 0.7);
+}
+
+/* Interactive Floating Soap & Foam Bubble Engine */
+.bubble-particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  will-change: transform, opacity;
+  background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.4) 22%, hsla(var(--bubble-hue), 85%, 65%, 0.28) 55%, hsla(calc(var(--bubble-hue) + 40), 90%, 65%, 0.22) 80%, hsla(var(--bubble-hue), 80%, 55%, 0.35) 100%);
+  border: 1.2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: inset -2px -2px 6px hsla(var(--bubble-hue), 80%, 60%, 0.35),
+              inset 2px 2px 7px rgba(255, 255, 255, 0.85),
+              0 4px 14px hsla(var(--bubble-hue), 80%, 50%, 0.15);
+  backdrop-filter: blur(0.5px);
+  animation: floatBubble var(--float-dur) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.bubble-particle::before {
+  content: '';
+  position: absolute;
+  top: 18%;
+  left: 20%;
+  width: 28%;
+  height: 24%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 75%);
+  transform: rotate(-25deg);
+}
+
+.bubble-particle::after {
+  content: '';
+  position: absolute;
+  bottom: 16%;
+  right: 18%;
+  width: 16%;
+  height: 16%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 70%);
+}
+
+@keyframes floatBubble {
+  0% {
+    transform: translate3d(0, 0, 0) scale(0.5);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.95;
+    transform: translate3d(calc(var(--sway-dist) * 0.4), calc(var(--float-dist) * -0.25), 0) scale(1);
+  }
+  65% {
+    opacity: 0.9;
+    transform: translate3d(var(--sway-dist), calc(var(--float-dist) * -0.75), 0) scale(1.04);
+  }
+  100% {
+    opacity: 0.85;
+    transform: translate3d(calc(var(--sway-dist) * 0.7), calc(var(--float-dist) * -1), 0) scale(1.08);
+  }
+}
+
+.bubble-particle.bubble-popping {
+  animation: popBurst 0.28s cubic-bezier(0.1, 0.9, 0.2, 1) forwards !important;
+}
+
+@keyframes popBurst {
+  0% {
+    transform: translate3d(calc(var(--sway-dist) * 0.7), calc(var(--float-dist) * -1), 0) scale(1.08);
+    opacity: 0.95;
+    filter: brightness(1.3);
+  }
+  35% {
+    transform: translate3d(calc(var(--sway-dist) * 0.7), calc(var(--float-dist) * -1.02), 0) scale(1.48);
+    opacity: 0.85;
+    border-color: rgba(255, 255, 255, 1);
+    box-shadow: 0 0 18px hsla(var(--bubble-hue), 90%, 65%, 0.85);
+  }
+  70% {
+    transform: translate3d(calc(var(--sway-dist) * 0.7), calc(var(--float-dist) * -1.04), 0) scale(1.7);
+    opacity: 0.35;
+    border-width: 0.5px;
+  }
+  100% {
+    transform: translate3d(calc(var(--sway-dist) * 0.7), calc(var(--float-dist) * -1.06), 0) scale(1.85);
+    opacity: 0;
+    border-width: 0px;
+  }
+}
+
+.bubble-droplets {
+  position: absolute;
+  inset: 0;
+}
+
+.bubble-drop {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 5px hsla(var(--bubble-hue), 90%, 65%, 0.8);
+}
+
+.d-t {
+  top: 50%; left: 50%;
+  animation: sprayTop 0.25s ease-out forwards;
+}
+.d-r {
+  top: 50%; left: 50%;
+  animation: sprayRight 0.25s ease-out forwards;
+}
+.d-b {
+  top: 50%; left: 50%;
+  animation: sprayBottom 0.25s ease-out forwards;
+}
+.d-l {
+  top: 50%; left: 50%;
+  animation: sprayLeft 0.25s ease-out forwards;
+}
+
+@keyframes sprayTop {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -20px) scale(0); opacity: 0; }
+}
+@keyframes sprayRight {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(16px, -50%) scale(0); opacity: 0; }
+}
+@keyframes sprayBottom {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, 16px) scale(0); opacity: 0; }
+}
+@keyframes sprayLeft {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-20px, -50%) scale(0); opacity: 0; }
 }
 </style>

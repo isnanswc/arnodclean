@@ -22,8 +22,19 @@ import {
   ChevronRight,
   ExternalLink,
   ShieldCheck,
+  Globe,
   X
 } from 'lucide-vue-next'
+
+const publicWebUrl = computed(() => {
+  if (typeof window !== 'undefined') {
+    const path = window.location.pathname
+    const match = path.match(/^(.*?)\/admin-v2(?:\/.*)?$/)
+    const prefix = match ? match[1] : ''
+    return prefix ? `${prefix}/` : '/'
+  }
+  return '/'
+})
 
 const props = defineProps<{
   isCollapsed: boolean
@@ -193,8 +204,18 @@ async function handleLogout() {
           </router-link>
         </div>
 
-        <!-- Switch back to Admin Old link -->
-        <div class="pt-4 border-t border-slate-100">
+        <!-- Public Website Link & Switch to Admin Old -->
+        <div class="pt-3 border-t border-slate-100 space-y-1">
+          <a
+            :href="publicWebUrl"
+            target="_blank"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50/60 transition-colors"
+            title="Lihat Website Publik"
+          >
+            <Globe class="w-4 h-4 shrink-0 text-blue-600" />
+            <span v-if="!isCollapsed" class="truncate">Buka Web Publik</span>
+          </a>
+
           <a
             href="../admin/dashboard.php"
             class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-500 hover:text-blue-600 hover:bg-slate-50 transition-colors"

@@ -262,37 +262,54 @@ onMounted(() => {
         class="rounded-2xl bg-white border border-slate-100 shadow-subtle hover:shadow-card transition-all duration-200 overflow-hidden flex flex-col justify-between group"
       >
         <div class="p-5 space-y-3">
-          <!-- Thumbnail / Media -->
-          <div class="relative h-32 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center">
-            <div v-if="b.media_type === 'video'" class="flex flex-col items-center justify-center text-blue-600 gap-1">
-              <Video class="w-8 h-8" />
-              <span class="text-[10px] font-semibold">Video Media</span>
-            </div>
-            <div v-else class="flex flex-col items-center justify-center text-slate-400 gap-1">
-              <ImageIcon class="w-8 h-8" />
-              <span class="text-[10px]">Tanpa Foto</span>
+          <!-- Thumbnail / Media (Flexible Aspect Ratio 1:1, 4:3, 16:9 Uncropped) -->
+          <div class="relative h-44 sm:h-48 rounded-2xl bg-slate-950/90 overflow-hidden flex items-center justify-center border border-slate-100 shadow-inner">
+            <div v-if="!b.image_path" class="flex flex-col items-center justify-center text-slate-400 gap-1.5 p-4">
+              <Video v-if="b.media_type === 'video'" class="w-8 h-8 text-blue-500" />
+              <ImageIcon v-else class="w-8 h-8 text-slate-300" />
+              <span class="text-[11px] font-medium">{{ b.media_type === 'video' ? 'Video Media' : 'Tanpa Media' }}</span>
             </div>
 
-            <video
-              v-if="b.image_path && b.media_type === 'video'"
-              :src="getImageUrl(b.image_path)"
-              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 absolute inset-0"
-              muted
-              loop
-              playsinline
-              autoplay
-              @error="(e: any) => { e.target.style.display = 'none'; }"
-            ></video>
-            <img
-              v-else-if="b.image_path"
-              :src="getImageUrl(b.image_path)"
-              :alt="b.title"
-              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 absolute inset-0"
-              @error="(e: any) => { e.target.style.display = 'none'; }"
-            />
+            <!-- Ambient Blurred Background (Prevents harsh gaps while keeping 100% full content) -->
+            <template v-if="b.image_path">
+              <video
+                v-if="b.media_type === 'video'"
+                :src="getImageUrl(b.image_path)"
+                class="w-full h-full object-cover blur-xl opacity-35 scale-125 absolute inset-0 pointer-events-none"
+                muted
+                loop
+                playsinline
+                autoplay
+              ></video>
+              <img
+                v-else
+                :src="getImageUrl(b.image_path)"
+                :alt="b.title"
+                class="w-full h-full object-cover blur-xl opacity-35 scale-125 absolute inset-0 pointer-events-none"
+              />
+
+              <!-- Full Uncropped Content Display (Object Contain) -->
+              <video
+                v-if="b.media_type === 'video'"
+                :src="getImageUrl(b.image_path)"
+                class="w-full h-full object-contain relative z-10 p-1.5 group-hover:scale-[1.03] transition-transform duration-300"
+                muted
+                loop
+                playsinline
+                autoplay
+                @error="(e: any) => { e.target.style.display = 'none'; }"
+              ></video>
+              <img
+                v-else
+                :src="getImageUrl(b.image_path)"
+                :alt="b.title"
+                class="w-full h-full object-contain relative z-10 p-1.5 group-hover:scale-[1.03] transition-transform duration-300"
+                @error="(e: any) => { e.target.style.display = 'none'; }"
+              />
+            </template>
 
             <!-- Media Type Pill -->
-            <span class="absolute top-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-white/90 backdrop-blur-md text-blue-700 shadow-sm border border-white">
+            <span class="absolute top-2.5 right-2.5 z-20 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white/95 backdrop-blur-md text-blue-700 shadow-sm border border-white/80">
               {{ b.media_type }}
             </span>
           </div>
@@ -390,26 +407,51 @@ onMounted(() => {
 
           <div class="space-y-2">
             <label class="block text-xs font-semibold text-slate-700">Berkas Media (Opsional)</label>
-            <div v-if="imagePreview" class="relative w-full h-28 rounded-xl bg-slate-100 overflow-hidden border border-slate-200">
+            <div v-if="imagePreview" class="relative w-full min-h-[180px] max-h-[280px] rounded-2xl bg-slate-950/90 overflow-hidden border border-slate-200 flex items-center justify-center shadow-inner">
+              <!-- Ambient background for filling aspect ratio gracefully -->
               <video
                 v-if="formMediaType === 'video' || (selectedFile && selectedFile.type.startsWith('video/'))"
                 :src="imagePreview"
-                class="w-full h-full object-cover"
+                class="w-full h-full object-cover blur-xl opacity-35 scale-125 absolute inset-0 pointer-events-none"
+                muted
+                loop
+                playsinline
+                autoplay
+              ></video>
+              <img
+                v-else
+                :src="imagePreview"
+                alt="Ambient"
+                class="w-full h-full object-cover blur-xl opacity-35 scale-125 absolute inset-0 pointer-events-none"
+              />
+
+              <!-- Uncropped Full Media Preview (Object Contain) -->
+              <video
+                v-if="formMediaType === 'video' || (selectedFile && selectedFile.type.startsWith('video/'))"
+                :src="imagePreview"
+                class="w-full h-full max-h-[260px] object-contain relative z-10 p-2"
                 controls
               ></video>
-              <img v-else :src="imagePreview" alt="Preview" class="w-full h-full object-cover" />
+              <img
+                v-else
+                :src="imagePreview"
+                alt="Preview"
+                class="w-full h-full max-h-[260px] object-contain relative z-10 p-2"
+              />
               <button
                 type="button"
                 @click="() => { imagePreview = null; selectedFile = null; formCurrentImage = ''; }"
-                class="absolute top-2 right-2 p-1 rounded-full bg-slate-900/60 hover:bg-slate-900 text-white z-10"
+                class="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-slate-900/80 hover:bg-slate-900 text-white z-20 shadow-md backdrop-blur-sm transition-transform active:scale-95"
+                title="Hapus Media"
               >
-                <X class="w-3.5 h-3.5" />
+                <X class="w-4 h-4" />
               </button>
             </div>
 
-            <label class="flex flex-col items-center justify-center p-3.5 rounded-xl border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50/50 hover:bg-blue-50/30 transition-all cursor-pointer">
-              <Upload class="w-4 h-4 text-blue-600 mb-1" />
+            <label class="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-dashed border-slate-200 hover:border-blue-400 bg-slate-50/50 hover:bg-blue-50/30 transition-all cursor-pointer">
+              <Upload class="w-5 h-5 text-blue-600 mb-1" />
               <span class="text-xs font-semibold text-slate-700">Pilih berkas</span>
+              <span class="text-[10px] text-slate-400">Mendukung rasio 1:1, 4:3, 16:9 (Foto atau Video)</span>
               <input type="file" accept="image/*,video/*" class="hidden" @change="handleFileChange" />
             </label>
           </div>
