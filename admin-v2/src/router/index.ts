@@ -107,8 +107,19 @@ const routes = [
   },
 ]
 
+function getRouterBase(): string {
+  if (typeof window !== 'undefined') {
+    const path = window.location.pathname
+    const match = path.match(/^(.*?\/admin-v2)(?:\/.*)?$/)
+    if (match) {
+      return match[1] + '/'
+    }
+  }
+  return import.meta.env.BASE_URL || '/admin-v2/'
+}
+
 export const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(getRouterBase()),
   routes,
 })
 

@@ -3,7 +3,7 @@ RewriteEngine On
 # Allow direct access to dist/assets
 RewriteRule ^assets/(.*)$ dist/assets/$1 [L]
 
-# SPA HTML5 History fallback
+# SPA HTML5 History fallback to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^.*$ dist/index.html [L]
+RewriteRule ^.*$ index.php [L]

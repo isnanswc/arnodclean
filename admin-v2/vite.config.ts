@@ -10,7 +10,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  base: process.env.NODE_ENV === 'production' ? '/arno-dc/admin-v2/' : '/',
+  base: '/admin-v2/',
   server: {
     port: 5173,
     proxy: {
