@@ -32,7 +32,8 @@ import {
   Flame,
   PieChart as PieChartIcon,
   Calendar,
-  Layers
+  Layers,
+  Info
 } from 'lucide-vue-next'
 
 Chart.register(...registerables)
@@ -132,6 +133,8 @@ let serviceChartInstance: Chart | null = null
 // Leaflet Map state
 const mapContainer = ref<HTMLDivElement | null>(null)
 const mapFilter = ref<'all' | 'human' | 'bot'>('all')
+const mapPointsCount = ref(0)
+const isMapLoading = ref(false)
 let mapInstance: L.Map | null = null
 let markerLayerGroup: L.LayerGroup | null = null
 
@@ -426,6 +429,12 @@ function renderCharts(d: any) {
   }
 }
 
+function handleMapResize() {
+  if (mapInstance) {
+    mapInstance.invalidateSize()
+  }
+}
+
 // Leaflet Map Initialization
 function initMap() {
   if (!mapContainer.value) return
@@ -445,6 +454,10 @@ function initMap() {
   }).addTo(mapInstance)
 
   markerLayerGroup = L.layerGroup().addTo(mapInstance)
+
+  nextTick(() => {
+    mapInstance?.invalidateSize()
+  })
 }
 
 async function loadMapData() {
@@ -454,6 +467,7 @@ async function loadMapData() {
   if (!markerLayerGroup) return
 
   markerLayerGroup.clearLayers()
+  isMapLoading.value = true
 
   try {
     const res = await axios.get('/api/v2/data.php', {
@@ -467,12 +481,18 @@ async function loadMapData() {
 
     if (res.data?.status === 'success' && Array.isArray(res.data?.data)) {
       const points = res.data.data
+      mapPointsCount.value = points.length
+
       points.forEach((pt: any) => {
+        const lat = parseFloat(pt.lat)
+        const lng = parseFloat(pt.lng)
+        if (isNaN(lat) || isNaN(lng)) return
+
         const isBot = Number(pt.is_bot) === 1
         const color = isBot ? '#64748b' : '#2563eb'
         const fillColor = isBot ? '#cbd5e1' : '#93c5fd'
 
-        const marker = L.circleMarker([pt.lat, pt.lng], {
+        const marker = L.circleMarker([lat, lng], {
           radius: 6,
           fillColor,
           color,
@@ -495,9 +515,18 @@ async function loadMapData() {
         marker.bindPopup(popupHtml)
         markerLayerGroup?.addLayer(marker)
       })
+
+      nextTick(() => {
+        mapInstance?.invalidateSize()
+      })
+    } else {
+      mapPointsCount.value = 0
     }
   } catch (err) {
     console.error('Failed to load map data:', err)
+    mapPointsCount.value = 0
+  } finally {
+    isMapLoading.value = false
   }
 }
 
@@ -508,9 +537,11 @@ watch(mapFilter, () => {
 onMounted(() => {
   initMap()
   fetchDashboardData()
+  window.addEventListener('resize', handleMapResize)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleMapResize)
   if (typingTimer) clearInterval(typingTimer)
   if (trafficChartInstance) trafficChartInstance.destroy()
   if (articleChartInstance) articleChartInstance.destroy()
@@ -1054,9 +1085,17 @@ onBeforeUnmount(() => {
           <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
             <Globe class="w-4 h-4 text-blue-600" />
             <span>Peta Persebaran Pengunjung</span>
+            <span
+              class="text-xs px-2.5 py-0.5 rounded-full font-bold border transition-colors"
+              :class="mapPointsCount > 0 
+                ? 'bg-blue-50 text-blue-700 border-blue-100' 
+                : 'bg-slate-100 text-slate-500 border-slate-200'"
+            >
+              {{ isMapLoading ? 'Memuat...' : `${mapPointsCount} Titik Terpetakan` }}
+            </span>
           </h2>
           <p class="text-xs text-slate-400 mt-0.5">
-            Visualisasi titik lokasi pengunjung berdasarkan IP Address
+            Visualisasi titik lokasi pengunjung berdasarkan IP Address riil
           </p>
         </div>
 
@@ -1091,6 +1130,20 @@ onBeforeUnmount(() => {
         <div ref="mapContainer" class="w-full h-full z-10"></div>
         <div class="absolute top-3 right-3 z-20 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-sm text-[11px] font-medium text-slate-600">
           Jangkauan: <strong class="text-slate-900 font-bold">{{ rangeLabels[currentRange] }}</strong>
+        </div>
+
+        <!-- Informative overlay when points are 0 -->
+        <div
+          v-if="!isMapLoading && mapPointsCount === 0"
+          class="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 z-20 max-w-md p-3.5 rounded-2xl bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-lg text-xs text-slate-600 flex items-start gap-2.5 animate-fadeIn"
+        >
+          <Info class="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+          <div>
+            <span class="font-bold text-slate-800">Belum ada titik koordinat publik (0 data)</span>
+            <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+              Semua kunjungan pada periode ini tercatat dari <strong>localhost / jaringan lokal (127.0.0.1)</strong> sehingga tidak memiliki koordinat GPS publik. Titik lokasi akan otomatis muncul saat ada kunjungan pengunjung nyata dari internet.
+            </p>
+          </div>
         </div>
       </div>
     </div>

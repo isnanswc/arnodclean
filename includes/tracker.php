@@ -4,7 +4,20 @@
 
 if (!isset($_SESSION)) session_start();
 
-$ip_address = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+// Extract real client IP (Cloudflare / Reverse Proxy / Direct)
+$client_ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+$ip_headers = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP'];
+foreach ($ip_headers as $hdr) {
+    if (!empty($_SERVER[$hdr])) {
+        $parts = explode(',', $_SERVER[$hdr]);
+        $test_ip = trim($parts[0]);
+        if (filter_var($test_ip, FILTER_VALIDATE_IP)) {
+            $client_ip = $test_ip;
+            break;
+        }
+    }
+}
+$ip_address = $client_ip;
 $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 $today = date('Y-m-d');
 $current_page = $_SERVER['REQUEST_URI'] ?? '/';
@@ -34,9 +47,21 @@ if (!in_array($current_page, $_SESSION['visited_pages'])) {
             $is_private_ip = filter_var($ip_address, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
             
             if (!$is_private_ip) {
-                // Timeout set to 1s to prevent site slowdown
-                $ctx = stream_context_create(['http'=> ['timeout' => 1]]);
-                $details_json = @file_get_contents("http://ip-api.com/json/{$ip_address}?fields=country,city,lat,lon", false, $ctx);
+                $details_json = null;
+                $geo_url = "http://ip-api.com/json/{$ip_address}?fields=country,city,lat,lon";
+                if (function_exists('curl_init')) {
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, $geo_url);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 2);
+                    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+                    curl_setopt($ch, CURLOPT_USERAGENT, 'ArnoDC-Tracker/1.0');
+                    $details_json = curl_exec($ch);
+                    curl_close($ch);
+                } else {
+                    $ctx = stream_context_create(['http'=> ['timeout' => 2]]);
+                    $details_json = @file_get_contents($geo_url, false, $ctx);
+                }
                 
                 if ($details_json) {
                     $details = json_decode($details_json, true);

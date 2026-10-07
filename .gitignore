@@ -22,3 +22,11 @@ Thumbs.db
 # IDE & Editor files
 .vscode/
 .idea/
+
+# User Uploaded Media (Preserve production uploads from being overwritten)
+uploads/articles/*
+uploads/articles/content/*
+!uploads/articles/.htaccess
+!uploads/articles/content/.htaccess
+!uploads/**/.keep
+

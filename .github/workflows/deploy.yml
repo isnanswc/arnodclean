@@ -1,0 +1,55 @@
+name: Auto Deploy to Web Host
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Web Hosting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js (untuk Build Admin V2)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'admin-v2/package-lock.json'
+
+      - name: 🔨 Install & Build Admin V2
+        run: |
+          cd admin-v2
+          npm ci
+          npm run build
+
+      - name: 🚀 Sync Files to Hosting via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          # Sesuaikan folder target di hosting (biasanya public_html/ atau /)
+          server-dir: ${{ secrets.FTP_SERVER_DIR || 'public_html/' }}
+          protocol: ftp
+          # SANGAT PENTING: Exclude agar gambar & database di hosting TIDAK PERNAH tertimpa
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            admin-v2/node_modules/**
+            **/uploads/articles/**
+            **/uploads/articles/content/**
+            **/uploads/benefits/**
+            **/uploads/testimonials/**
+            **/uploads/services/**
+            config.php
+            config.local.php
+            tests/**
+            .vscode/**
+            DEPLOY_NOTES.txt
+            *.sql

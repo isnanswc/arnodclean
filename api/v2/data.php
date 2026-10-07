@@ -279,6 +279,39 @@ try {
             ]);
             break;
 
+        case 'realtime_status':
+            // Active visitors within the last 5 minutes (Realtime)
+            $stmtActive = $pdo->query("
+                SELECT 
+                    COUNT(DISTINCT ip_address) as active_now,
+                    SUM(CASE WHEN is_bot = 0 THEN 1 ELSE 0 END) as active_human,
+                    SUM(CASE WHEN is_bot = 1 THEN 1 ELSE 0 END) as active_bot
+                FROM visitor_analytics 
+                WHERE created_at >= NOW() - INTERVAL 5 MINUTE
+            ");
+            $activeRow = $stmtActive ? $stmtActive->fetch(PDO::FETCH_ASSOC) : [];
+
+            $todayHuman = (int)$pdo->query("SELECT COUNT(*) FROM visitor_analytics WHERE visited_at = CURDATE() AND is_bot = 0")->fetchColumn();
+            $todayBot = (int)$pdo->query("SELECT COUNT(*) FROM visitor_analytics WHERE visited_at = CURDATE() AND is_bot = 1")->fetchColumn();
+
+            // Most recent visitor
+            $stmtLast = $pdo->query("SELECT ip_address, city, country, device, is_bot, created_at FROM visitor_analytics ORDER BY created_at DESC LIMIT 1");
+            $lastVisitor = $stmtLast ? $stmtLast->fetch(PDO::FETCH_ASSOC) : null;
+
+            echo json_encode([
+                'status' => 'success',
+                'data' => [
+                    'active_now' => (int)($activeRow['active_now'] ?? 0),
+                    'active_human' => (int)($activeRow['active_human'] ?? 0),
+                    'active_bot' => (int)($activeRow['active_bot'] ?? 0),
+                    'today_human' => $todayHuman,
+                    'today_bot' => $todayBot,
+                    'last_visitor' => $lastVisitor,
+                    'server_time' => date('H:i:s')
+                ]
+            ]);
+            break;
+
         case 'dashboard_map':
             $range = $_GET['range'] ?? '7days';
             $filter = $_GET['filter'] ?? 'all';
@@ -305,9 +338,27 @@ try {
 
             $stmtMap = $pdo->prepare("SELECT id, lat, lng, city, country, is_bot, device, visited_at FROM visitor_analytics WHERE $where ORDER BY visited_at DESC LIMIT 1500");
             $stmtMap->execute($params);
+            $rawPoints = $stmtMap->fetchAll(PDO::FETCH_ASSOC);
+
+            // Format coordinates as floats for Leaflet
+            $points = [];
+            foreach ($rawPoints as $pt) {
+                $points[] = [
+                    'id' => (int)$pt['id'],
+                    'lat' => (float)$pt['lat'],
+                    'lng' => (float)$pt['lng'],
+                    'city' => $pt['city'] ?: 'Unknown',
+                    'country' => $pt['country'] ?: '',
+                    'is_bot' => (int)$pt['is_bot'],
+                    'device' => $pt['device'] ?: 'Desktop',
+                    'visited_at' => $pt['visited_at']
+                ];
+            }
+
             echo json_encode([
                 'status' => 'success',
-                'data' => $stmtMap->fetchAll(PDO::FETCH_ASSOC)
+                'data' => $points,
+                'total_points' => count($points)
             ]);
             break;
 
