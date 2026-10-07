@@ -613,11 +613,29 @@ async function saveCurrentTab() {
   }
 }
 
-// Mobile Bottom Horizontal Sheet Navigation
+// Mobile Bottom Horizontal Sheet Navigation - Dynamically stacked right above navbar
 const activeTabIndex = computed(() => tabs.findIndex(t => t.id === activeTab.value))
+const bottomNavHeight = ref(56)
 
-function selectTab(id: SettingTab) {
+function updateBottomNavHeight() {
+  const nav = document.querySelector('nav.lg\\:hidden')
+  if (nav) {
+    const rect = nav.getBoundingClientRect()
+    if (rect.height > 0) {
+      bottomNavHeight.value = Math.round(rect.height)
+    }
+  }
+}
+
+function selectTab(id: SettingTab, event?: MouseEvent) {
   activeTab.value = id
+  if (event?.currentTarget) {
+    (event.currentTarget as HTMLElement).scrollIntoView({
+      behavior: 'smooth',
+      inline: 'center',
+      block: 'nearest'
+    })
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -704,17 +722,20 @@ function handleScroll() {
 
 onMounted(() => {
   fetchSettings()
+  updateBottomNavHeight()
+  window.addEventListener('resize', updateBottomNavHeight)
   window.addEventListener('scroll', handleScroll, { passive: true })
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateBottomNavHeight)
   window.removeEventListener('scroll', handleScroll)
   activeBubbles.value = []
 })
 </script>
 
 <template>
-  <div class="space-y-6 animate-fadeIn pb-36 lg:pb-16 relative">
+  <div class="space-y-6 animate-fadeIn pb-44 lg:pb-16 relative">
     <!-- Toast Notification -->
     <div
       v-if="toast.show"
@@ -836,69 +857,72 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- INTERACTIVE FLOATING & POPPING BUBBLES ON SCROLL -->
-    <div class="fixed inset-0 pointer-events-none z-50 overflow-hidden" aria-hidden="true">
-      <div
-        v-for="b in activeBubbles"
-        :key="b.id"
-        class="bubble-particle"
-        :class="{ 'bubble-popping': b.isPopping }"
-        :style="{
-          left: `${b.x}%`,
-          bottom: `${b.bottom}px`,
-          width: `${b.size}px`,
-          height: `${b.size}px`,
-          borderRadius: b.borderRadius,
-          '--float-dist': `${b.floatDistance}px`,
-          '--sway-dist': `${b.swayDistance}px`,
-          '--float-dur': `${b.duration}s`,
-          '--bubble-hue': `${b.hue}`
-        }"
-      >
-        <!-- Burst Droplets Splash when Popping -->
-        <div v-if="b.isPopping" class="bubble-droplets">
-          <span class="bubble-drop d-t"></span>
-          <span class="bubble-drop d-r"></span>
-          <span class="bubble-drop d-b"></span>
-          <span class="bubble-drop d-l"></span>
+    <Teleport to="body">
+      <div class="fixed inset-0 pointer-events-none z-50 overflow-hidden" aria-hidden="true">
+        <div
+          v-for="b in activeBubbles"
+          :key="b.id"
+          class="bubble-particle"
+          :class="{ 'bubble-popping': b.isPopping }"
+          :style="{
+            left: `${b.x}%`,
+            bottom: `${b.bottom}px`,
+            width: `${b.size}px`,
+            height: `${b.size}px`,
+            borderRadius: b.borderRadius,
+            '--float-dist': `${b.floatDistance}px`,
+            '--sway-dist': `${b.swayDistance}px`,
+            '--float-dur': `${b.duration}s`,
+            '--bubble-hue': `${b.hue}`
+          }"
+        >
+          <!-- Burst Droplets Splash when Popping -->
+          <div v-if="b.isPopping" class="bubble-droplets">
+            <span class="bubble-drop d-t"></span>
+            <span class="bubble-drop d-r"></span>
+            <span class="bubble-drop d-b"></span>
+            <span class="bubble-drop d-l"></span>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
 
-    <!-- MOBILE BOTTOM HORIZONTAL SCROLLABLE SHEET NAVIGATION (Stacked right above bottom navbar) -->
-    <div class="lg:hidden fixed bottom-16 left-0 right-0 z-40 pointer-events-auto px-2 sm:px-4">
-      <div class="bg-white/95 backdrop-blur-xl border border-slate-200/90 rounded-2xl shadow-xl shadow-slate-900/10 p-1.5 flex items-center overflow-x-auto gap-1.5 scroll-smooth no-scrollbar">
-        <button
-          v-for="t in tabs"
-          :key="t.id"
-          type="button"
-          @click="selectTab(t.id)"
-          class="flex-shrink-0 flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap active:scale-95"
-          :class="
-            activeTab === t.id
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/25 font-bold scale-[1.02]'
-              : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200/60'
-          "
-        >
-          <component
-            :is="t.icon"
-            class="w-4 h-4 flex-shrink-0"
-            :class="activeTab === t.id ? 'text-white' : 'text-slate-500'"
-          />
-          <span>{{ t.title }}</span>
-          <span
-            v-if="t.badge"
-            class="text-[9px] px-1.5 py-0.2 rounded-md font-bold"
-            :class="activeTab === t.id ? 'bg-white/20 text-white' : 'bg-violet-100 text-violet-700'"
+    <!-- MOBILE BOTTOM HORIZONTAL SCROLLABLE SHEET NAVIGATION (Stacked directly above navbar via Teleport) -->
+    <Teleport to="body">
+      <div
+        class="lg:hidden fixed left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 shadow-md shadow-slate-900/5 transition-all"
+        :style="{ bottom: `${bottomNavHeight}px` }"
+      >
+        <div class="flex items-center overflow-x-auto gap-2 py-2 px-3 no-scrollbar scroll-smooth">
+          <button
+            v-for="t in tabs"
+            :key="t.id"
+            type="button"
+            @click="(e) => selectTab(t.id, e)"
+            class="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap active:scale-95"
+            :class="
+              activeTab === t.id
+                ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30 font-bold'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80 border border-slate-200/60'
+            "
           >
-            {{ t.badge }}
-          </span>
-          <span
-            v-if="activeTab === t.id"
-            class="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0 ml-0.5 animate-pulse"
-          ></span>
-        </button>
+            <component
+              :is="t.icon"
+              class="w-3.5 h-3.5 flex-shrink-0"
+              :class="activeTab === t.id ? 'text-white' : 'text-slate-500'"
+            />
+            <span>{{ t.title }}</span>
+            <span
+              v-if="t.badge"
+              class="text-[9px] px-1 py-0.2 rounded font-bold"
+              :class="activeTab === t.id ? 'bg-white/20 text-white' : 'bg-violet-100 text-violet-700'"
+            >
+              {{ t.badge }}
+            </span>
+          </button>
+        </div>
       </div>
-    </div>
+    </Teleport>
 
     <!-- MAIN MASTER-DETAIL WORKSPACE (Vertical Sidebar + Precision Sheet, No Slider!) -->
     <div class="flex flex-col lg:flex-row gap-6 items-start">
@@ -2091,12 +2115,12 @@ onBeforeUnmount(() => {
 
 <style scoped>
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.25s ease-out forwards;
+  animation: fadeIn 0.2s ease-out forwards;
 }
 
 .shadow-subtle {
