@@ -1,7 +1,10 @@
 User-agent: *
 Allow: /
 Disallow: /admin/
+Disallow: /admin-v2/
+Disallow: /api/
 Disallow: /includes/
 Disallow: /vendor/
+Disallow: /*?search=*
 
-Sitemap: https://www.arnod-clean.com/sitemap.php
+Sitemap: https://arnod-clean.com/sitemap.php

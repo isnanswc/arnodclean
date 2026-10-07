@@ -66,13 +66,15 @@ $siteUrl = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTT
     // Calculate Base URL for <base> tag to fix relative links with Friendly URLs
     $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http");
     $host = $_SERVER['HTTP_HOST'];
+    $cleanHost = preg_replace('/^www\./i', '', $host);
+    $canonicalProtocol = ($cleanHost === 'arnod-clean.com') ? 'https' : $protocol;
     $scriptDir = dirname($_SERVER['SCRIPT_NAME']);
     // Ensure trailing slash
     $baseUrl = $protocol . "://" . $host . rtrim($scriptDir, '/\\') . '/';
+    $canonicalBase = $canonicalProtocol . "://" . $cleanHost . rtrim($scriptDir, '/\\') . '/';
 
-    // Fix Image URL calculation to use correctly detected base
     // Calculate Clean Canonical URL
-    $canonicalUrl = $baseUrl . 'blog/' . $article['slug'];
+    $canonicalUrl = $canonicalBase . 'blog/' . $article['slug'];
     $publishedTime = date('c', strtotime($article['created_at']));
 
     // --- Fetch Contact Info ---
@@ -446,7 +448,7 @@ $siteUrl = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTT
                         <?php if(!empty($tags)): ?>
                         <div class="mt-3">
                             <?php foreach($tags as $t): ?>
-                                <a href="blog.php?search=<?php echo urlencode(trim($t)); ?>" class="tag-pill me-1 text-decoration-none badge bg-light text-secondary border hover-primary"><?php echo htmlspecialchars(trim($t)); ?></a>
+                                <a href="blog.php?search=<?php echo urlencode(trim($t)); ?>" rel="nofollow" class="tag-pill me-1 text-decoration-none badge bg-light text-secondary border hover-primary"><?php echo htmlspecialchars(trim($t)); ?></a>
                             <?php endforeach; ?>
                         </div>
                         <?php endif; ?>
@@ -540,7 +542,7 @@ $siteUrl = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTT
                                      echo '<span class="text-muted small">Belum ada topik populer.</span>';
                                 } else {
                                     foreach($popTags as $pt) {
-                                        echo '<a href="blog.php?search='.urlencode($pt['name']).'" class="tag-pill text-decoration-none d-flex align-items-center">';
+                                        echo '<a href="blog.php?search='.urlencode($pt['name']).'" rel="nofollow" class="tag-pill text-decoration-none d-flex align-items-center">';
                                         echo htmlspecialchars($pt['name']);
                                         echo '<span class="badge bg-white text-secondary ms-2 rounded-pill shadow-sm" style="font-size: 0.7em;">'.$pt['count'].'</span>';
                                         echo '</a>';

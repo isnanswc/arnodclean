@@ -52,15 +52,27 @@ $waLink = "https://wa.me/$waNumber" . ($waTemplate ? "?text=" . urlencode($waTem
     <title>Blog & Tips Kebersihan - Arno D Clean</title>
     <meta name="description" content="Temukan tips kebersihan terbaik, panduan merawat furniture, dan solusi cuci sofa, springbed, serta karpet profesional dari Arno D Clean.">
     
+    <?php
+    $bHost = preg_replace('/^www\./i', '', $_SERVER['HTTP_HOST']);
+    $bProto = ($bHost === 'arnod-clean.com') ? 'https' : (isset($_SERVER['HTTPS']) ? "https" : "http");
+    $blogCanonical = $bProto . "://" . $bHost . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    ?>
+    <!-- Robots Directive -->
+    <?php if(!empty($_GET['search']) || !empty($_GET['tag'])): ?>
+    <meta name="robots" content="noindex, follow">
+    <?php else: ?>
+    <meta name="robots" content="index, follow">
+    <?php endif; ?>
+
     <!-- Canonical -->
-    <link rel="canonical" href="<?php echo (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH); ?>">
+    <link rel="canonical" href="<?php echo htmlspecialchars($blogCanonical); ?>">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="<?php echo (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']; ?>">
+    <meta property="og:url" content="<?php echo htmlspecialchars($blogCanonical); ?>">
     <meta property="og:title" content="Blog & Tips Kebersihan - Arno D Clean">
     <meta property="og:description" content="Temukan tips kebersihan terbaik, panduan merawat furniture, dan solusi cuci sofa, springbed, serta karpet profesional dari Arno D Clean.">
-    <meta property="og:image" content="<?php echo (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . '/' . ($siteLogo ?: 'img/l2.png'); ?>">
+    <meta property="og:image" content="<?php echo $bProto . "://" . $bHost . '/' . ($siteLogo ?: 'img/l2.png'); ?>">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">

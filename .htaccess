@@ -1,5 +1,19 @@
 RewriteEngine On
 
+# --- CANONICAL DOMAIN & SSL (PRODUCTION) ---
+# 1. Force HTTPS for arnod-clean.com
+RewriteCond %{HTTPS} off
+RewriteCond %{HTTP_HOST} ^(www\.)?arnod-clean\.com$ [NC]
+RewriteRule ^(.*)$ https://arnod-clean.com/$1 [R=301,L]
+
+# 2. Redirect WWW to Non-WWW
+RewriteCond %{HTTP_HOST} ^www\.arnod-clean\.com$ [NC]
+RewriteRule ^(.*)$ https://arnod-clean.com/$1 [R=301,L]
+
+# 3. Strip index.php to root /
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /index\.php [NC]
+RewriteRule ^index\.php$ / [R=301,L]
+
 # --- SECURITY RULES ---
 # 1. Disable Directory Browsing
 Options -Indexes

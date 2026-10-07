@@ -59,7 +59,9 @@ try {
     <?php
         $siteTitle = $setting['site_meta_title'] ?? 'Arno D Clean - Jasa Cuci Kasur & Sofa Tangerang';
         $siteDesc = $setting['site_meta_description'] ?? 'Jasa cuci sofa, kasur, dan karpet profesional di Tangerang. Bersih, wangi, dan bebas tungau.';
-        $baseUrl = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
+        $rawHost = preg_replace('/^www\./i', '', $_SERVER['HTTP_HOST']);
+        $rawProto = ($rawHost === 'arnod-clean.com') ? 'https' : (isset($_SERVER['HTTPS']) ? "https" : "http");
+        $baseUrl = $rawProto . "://" . $rawHost;
     ?>
     <title><?php echo htmlspecialchars($siteTitle); ?></title>
     <meta name="description" content="<?php echo htmlspecialchars($siteDesc); ?>">

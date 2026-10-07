@@ -8,7 +8,10 @@ require_once 'db.php';
 
 // Try to get base URL from server
 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-$host = $_SERVER['HTTP_HOST'];
+$host = preg_replace('/^www\./i', '', $_SERVER['HTTP_HOST']);
+if ($host === 'arnod-clean.com') {
+    $protocol = 'https';
+}
 // If in a subdirectory like /adc/, detect it
 $script_name = $_SERVER['SCRIPT_NAME'];
 $base_dir = str_replace('sitemap.php', '', $script_name);
