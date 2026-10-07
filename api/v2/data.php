@@ -1743,7 +1743,7 @@ try {
                 $stmtWaHeatmap->execute([$startDate, $endDate]);
                 $heatmapWa = $stmtWaHeatmap->fetchAll(PDO::FETCH_ASSOC);
 
-                // Detailed WA Click Logs (with button labels & article titles)
+                // Detailed WA Click Logs (Normalized & Human-Friendly)
                 $stmtWaLogs = $pdo->prepare("
                     SELECT w.*, a.title as article_title
                     FROM wa_clicks w
@@ -1762,28 +1762,62 @@ try {
                 $waLogs = [];
                 foreach ($rawWaLogs as $idx => $row) {
                     $src = $row['source'] ?? '';
-                    $page = $row['page_url'] ?? '/';
+                    $rawPage = $row['page_url'] ?? '/';
                     $artTitle = $row['article_title'] ?? null;
                     
+                    // Parse URL path and query
+                    $parsedUrl = parse_url($rawPage);
+                    $path = $parsedUrl['path'] ?? '/';
+                    $queryString = $parsedUrl['query'] ?? '';
+                    $queryParams = [];
+                    if (!empty($queryString)) {
+                        parse_str($queryString, $queryParams);
+                    }
+
+                    // Detect Google Ads or Marketing Campaign
+                    $campaignBadge = null;
+                    $campaignType = 'Organik / Langsung';
+                    if (!empty($queryParams['gclid']) || !empty($queryParams['gad_source']) || !empty($queryParams['gad_campaignid'])) {
+                        $campaignType = 'Google Ads';
+                        $campId = $queryParams['gad_campaignid'] ?? null;
+                        $campaignBadge = $campId ? "Google Ads #{$campId}" : "Google Ads";
+                    } elseif (!empty($queryParams['utm_source'])) {
+                        $campaignType = ucfirst($queryParams['utm_source']);
+                        $campaignBadge = !empty($queryParams['utm_campaign']) 
+                            ? "{$campaignType} ({$queryParams['utm_campaign']})" 
+                            : $campaignType;
+                    }
+
+                    // Human-Friendly Page Name
+                    $humanPage = 'Halaman Beranda (Home)';
+                    if (!empty($artTitle)) {
+                        $humanPage = 'Artikel: ' . $artTitle;
+                    } elseif ($path === '/' || strpos($path, 'index') !== false || empty($path)) {
+                        $humanPage = 'Halaman Beranda (Home)';
+                    } elseif (strpos($path, 'blog') !== false) {
+                        $humanPage = 'Halaman Blog & Tips';
+                    } else {
+                        $humanPage = trim($path, '/') ?: 'Halaman Beranda (Home)';
+                    }
+
+                    // Human-Friendly Button Label
                     $btnLabel = '';
                     if (!empty($artTitle)) {
-                        $btnLabel = 'Tombol WA di Artikel: "' . $artTitle . '"';
+                        $btnLabel = 'Tombol WhatsApp di Artikel';
                     } elseif ($src === 'floating_widget') {
-                        $btnLabel = ($page === '/' || strpos($page, 'index') !== false) 
-                            ? 'Float Button di Halaman Home' 
-                            : 'Float Button Melayang (' . $page . ')';
+                        $btnLabel = 'Tombol WhatsApp Melayang (Floating)';
                     } elseif ($src === 'form_crm') {
-                        $btnLabel = 'Form CRM (Pemesanan/Kontak)';
+                        $btnLabel = 'Form Pemesanan / Kontak CRM';
                     } elseif ($src === 'hero_button') {
                         $btnLabel = 'Tombol Konsultasi (Hero Banner)';
                     } elseif ($src === 'service_card') {
-                        $btnLabel = 'Tombol WA di Kartu Layanan';
+                        $btnLabel = 'Tombol di Kartu Layanan';
                     } elseif ($src === 'header_button') {
-                        $btnLabel = 'Tombol WA di Header Navigasi';
+                        $btnLabel = 'Tombol Header Navigasi';
                     } elseif ($src === 'footer_button') {
-                        $btnLabel = 'Tombol WA di Footer';
+                        $btnLabel = 'Tombol Footer';
                     } else {
-                        $btnLabel = 'Tombol WA (' . ($src ?: 'Umum') . ')';
+                        $btnLabel = 'Tombol WhatsApp (' . ($src ?: 'Umum') . ')';
                     }
 
                     $waLogs[] = [
@@ -1791,36 +1825,87 @@ try {
                         'id' => (int)$row['id'],
                         'clicked_at' => $row['clicked_at'],
                         'button_label' => $btnLabel,
-                        'page_url' => $page,
+                        'page_name' => $humanPage,
+                        'page_url' => $rawPage,
+                        'clean_path' => $path,
+                        'campaign_type' => $campaignType,
+                        'campaign_badge' => $campaignBadge,
                         'ip_address' => $row['ip_address'] ?? '-',
-                        'location' => trim(($row['city'] ?? '') . ', ' . ($row['country'] ?? ''), ', ') ?: 'Unknown',
+                        'location' => trim(($row['city'] ?? '') . ', ' . ($row['country'] ?? ''), ', ') ?: 'Indonesia',
                         'device' => $row['device'] ?: 'Unknown'
                     ];
                 }
 
-                // Top Pages
+                // Top Pages (Aggregated & Cleaned)
                 $stmtPages = $pdo->prepare("
                     SELECT page_url, COUNT(*) as views 
                     FROM visitor_analytics 
                     WHERE visited_at BETWEEN ? AND ? AND is_bot = 0 AND page_url IS NOT NULL AND page_url != ''
                     GROUP BY page_url 
                     ORDER BY views DESC 
-                    LIMIT 10
+                    LIMIT 30
                 ");
                 $stmtPages->execute([$startDate, $endDate]);
-                $topPages = $stmtPages->fetchAll();
+                $rawTopPages = $stmtPages->fetchAll(PDO::FETCH_ASSOC);
 
-                // Top Cities
+                $articlesMap = $pdo->query("SELECT slug, title FROM articles")->fetchAll(PDO::FETCH_KEY_PAIR);
+
+                $normalizedPages = [];
+                foreach ($rawTopPages as $rp) {
+                    $u = $rp['page_url'];
+                    if (preg_match('/(rest_route|wp-|xmlrpc|\.env|\.git|phpmyadmin|admin)/i', $u)) {
+                        continue;
+                    }
+                    
+                    $pUrl = parse_url($u);
+                    $path = $pUrl['path'] ?? '/';
+                    $hasAds = strpos($u, 'gad_') !== false || strpos($u, 'gclid') !== false;
+
+                    $title = 'Halaman Beranda (Home)';
+                    if ($path === '/' || strpos($path, 'index') !== false || empty($path)) {
+                        $title = $hasAds ? 'Halaman Beranda (Google Ads)' : 'Halaman Beranda (Home)';
+                    } elseif (strpos($path, 'blog') !== false) {
+                        preg_match('#blog/([a-zA-Z0-9-]+)#', $path, $m);
+                        $slug = $m[1] ?? '';
+                        if ($slug && isset($articlesMap[$slug])) {
+                            $title = 'Artikel: ' . $articlesMap[$slug];
+                        } elseif ($slug) {
+                            $title = 'Artikel: ' . ucwords(str_replace('-', ' ', $slug));
+                        } else {
+                            $title = 'Halaman Blog & Tips';
+                        }
+                    } else {
+                        $title = trim($path, '/') ?: 'Halaman Beranda (Home)';
+                    }
+
+                    if (!isset($normalizedPages[$title])) {
+                        $normalizedPages[$title] = [
+                            'title' => $title,
+                            'page_url' => $path,
+                            'views' => 0
+                        ];
+                    }
+                    $normalizedPages[$title]['views'] += (int)$rp['views'];
+                }
+
+                uasort($normalizedPages, function($a, $b) {
+                    return $b['views'] - $a['views'];
+                });
+                $topPages = array_slice(array_values($normalizedPages), 0, 8);
+
+                // Top Cities (Prioritizing Human Traffic)
                 $stmtCities = $pdo->prepare("
-                    SELECT city, COUNT(DISTINCT ip_address) as visitors
+                    SELECT city, country, COUNT(DISTINCT ip_address) as visitors
                     FROM visitor_analytics
-                    WHERE visited_at BETWEEN ? AND ? AND city IS NOT NULL AND city != 'Unknown' AND city != ''
-                    GROUP BY city
+                    WHERE visited_at BETWEEN ? AND ? 
+                      AND city IS NOT NULL AND city != 'Unknown' AND city != ''
+                      AND is_bot = 0
+                    GROUP BY city, country
                     ORDER BY visitors DESC
-                    LIMIT 6
+                    LIMIT 8
                 ");
                 $stmtCities->execute([$startDate, $endDate]);
-                $topCities = $stmtCities->fetchAll();
+                $topCities = $stmtCities->fetchAll(PDO::FETCH_ASSOC);
 
                 // Devices
                 $stmtDevices = $pdo->prepare("
@@ -1923,6 +2008,143 @@ try {
                         'message' => 'Laporan Telegram berhasil dikirim ke grup/channel.',
                         'log' => $cronLog
                     ]);
+                    break;
+                }
+
+                if ($action === 'ai_insight') {
+                    $startDate = $postData['start_date'] ?? date('Y-m-d', strtotime('-30 days'));
+                    $endDate = $postData['end_date'] ?? date('Y-m-d');
+
+                    // Aggregate key stats for AI context
+                    $stmtViews = $pdo->prepare("SELECT COUNT(*) as views, COUNT(DISTINCT ip_address) as uniq FROM visitor_analytics WHERE visited_at BETWEEN ? AND ? AND is_bot = 0");
+                    $stmtViews->execute([$startDate, $endDate]);
+                    $vRow = $stmtViews->fetch(PDO::FETCH_ASSOC);
+                    $views = (int)($vRow['views'] ?? 0);
+                    $uniq = (int)($vRow['uniq'] ?? 0);
+
+                    $stmtWa = $pdo->prepare("SELECT COUNT(*) as total, SUM(CASE WHEN page_url LIKE '%gad_%' OR page_url LIKE '%gclid%' THEN 1 ELSE 0 END) as ads_clicks FROM wa_clicks WHERE DATE(clicked_at) BETWEEN ? AND ?");
+                    $stmtWa->execute([$startDate, $endDate]);
+                    $waRow = $stmtWa->fetch(PDO::FETCH_ASSOC);
+                    $totalWa = (int)($waRow['total'] ?? 0);
+                    $adsClicks = (int)($waRow['ads_clicks'] ?? 0);
+                    $organicClicks = max(0, $totalWa - $adsClicks);
+                    $convRate = $uniq > 0 ? round(($totalWa / $uniq) * 100, 2) : 0;
+
+                    // Peak Hour
+                    $stmtPeak = $pdo->prepare("SELECT HOUR(clicked_at) as h, COUNT(*) as c FROM wa_clicks WHERE DATE(clicked_at) BETWEEN ? AND ? GROUP BY h ORDER BY c DESC LIMIT 1");
+                    $stmtPeak->execute([$startDate, $endDate]);
+                    $peakHourRow = $stmtPeak->fetch(PDO::FETCH_ASSOC);
+                    $peakHour = isset($peakHourRow['h']) ? sprintf('%02d:00 - %02d:00 WIB', $peakHourRow['h'], $peakHourRow['h'] + 1) : '10:00 - 15:00 WIB';
+
+                    // Fetch AI Settings
+                    $stmtSet = $pdo->query("SELECT setting_key, setting_value FROM auto_content_settings");
+                    $aiSettings = [];
+                    while ($r = $stmtSet->fetch()) {
+                        $aiSettings[$r['setting_key']] = $r['setting_value'];
+                    }
+                    $activeProvider = $aiSettings['ai_active_provider'] ?? ($aiSettings['ai_provider'] ?? 'gemini');
+
+                    $prompt = "Anda adalah Senior Business Consultant untuk Arno D Clean (jasa cuci sofa, kasur/springbed, karpet, jok mobil di Tangerang & Jabodetabek).\n"
+                            . "Analisis data analitik berikut untuk pemilik bisnis awam dalam bahasa Indonesia yang ramah, profesional, mudah dicerna, dan bebas istilah teknis membingungkan.\n\n"
+                            . "Data Periode {$startDate} s/d {$endDate}:\n"
+                            . "- Total Kunjungan: {$views}\n"
+                            . "- Pengunjung Unik: {$uniq}\n"
+                            . "- Total Pelanggan Menghubungi WA: {$totalWa}\n"
+                            . "- Rasio Konversi: {$convRate}%\n"
+                            . "- Menghubungi dari Iklan Google Ads: {$adsClicks} orang\n"
+                            . "- Menghubungi dari Pencarian Organik/Langsung: {$organicClicks} orang\n"
+                            . "- Jam Tersibuk Menghubungi: {$peakHour}\n\n"
+                            . "WAJIB berikan respons HANYA berupa JSON valid persis format berikut (tanpa markdown backtick):\n"
+                            . "{\n"
+                            . "  \"status\": \"success\",\n"
+                            . "  \"headline\": \"Judul singkat ringkasan performa\",\n"
+                            . "  \"overview\": \"Narasi ramah 2-3 kalimat mengenai capaian trafik dan minat pelanggan.\",\n"
+                            . "  \"ads_insight\": \"Evaluasi efektivitas iklan Google Ads vs traffic gratisan organik (1-2 kalimat).\",\n"
+                            . "  \"peak_time_insight\": \"Waktu terbaik pelanggan menghubungi dan kesiapan customer service (1-2 kalimat).\",\n"
+                            . "  \"actionable_tips\": [\n"
+                            . "    \"Tips/aksi praktis 1 untuk meningkatkan penjualan\",\n"
+                            . "    \"Tips/aksi praktis 2\",\n"
+                            . "    \"Tips/aksi praktis 3\"\n"
+                            . "  ]\n"
+                            . "}";
+
+                    $aiContent = '';
+                    if ($activeProvider === 'groq') {
+                        $groqKeys = json_decode($aiSettings['ai_config_groq_keys'] ?? '[]', true);
+                        $apiKey = (!empty($groqKeys) && is_array($groqKeys)) ? $groqKeys[0] : '';
+                        $model = $aiSettings['ai_config_groq_model'] ?? 'llama-3.1-8b-instant';
+
+                        if (!empty($apiKey)) {
+                            $payload = [
+                                'model' => $model,
+                                'messages' => [
+                                    ['role' => 'system', 'content' => 'Anda adalah asisten konsultan bisnis. Output hanya JSON murni valid.'],
+                                    ['role' => 'user', 'content' => $prompt]
+                                ],
+                                'temperature' => 0.3
+                            ];
+                            $ch = curl_init('https://api.groq.com/openai/v1/chat/completions');
+                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                            curl_setopt($ch, CURLOPT_POST, true);
+                            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+                            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Authorization: Bearer ' . $apiKey]);
+                            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+                            $res = curl_exec($ch);
+                            curl_close($ch);
+                            $resJson = json_decode($res, true);
+                            $aiContent = $resJson['choices'][0]['message']['content'] ?? '';
+                        }
+                    } else {
+                        // Gemini
+                        $geminiKeys = json_decode($aiSettings['ai_config_gemini_keys'] ?? '[]', true);
+                        $apiKey = (!empty($geminiKeys) && is_array($geminiKeys)) ? $geminiKeys[0] : '';
+                        $model = $aiSettings['ai_config_gemini_model'] ?? 'gemini-1.5-flash';
+
+                        if (!empty($apiKey)) {
+                            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+                            $payload = [
+                                'contents' => [
+                                    ['parts' => [['text' => $prompt]]]
+                                ]
+                            ];
+                            $ch = curl_init($url);
+                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                            curl_setopt($ch, CURLOPT_POST, true);
+                            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+                            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+                            $res = curl_exec($ch);
+                            curl_close($ch);
+                            $resJson = json_decode($res, true);
+                            $aiContent = $resJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                        }
+                    }
+
+                    // Parse JSON from AI response
+                    $cleanJsonStr = trim(preg_replace('/^```json\s*|\s*```$/i', '', trim($aiContent)));
+                    $parsed = json_decode($cleanJsonStr, true);
+
+                    if (!$parsed || empty($parsed['overview'])) {
+                        // Fallback intelligent template with real numbers
+                        $adsText = $adsClicks > 0 
+                            ? "Iklan Google Ads berhasil menyumbang {$adsClicks} kontak WhatsApp potensial, melengkapi {$organicClicks} kontak dari jalur organik."
+                            : "Saat ini seluruh kontak masuk berasal dari jalur pencarian organik dan kunjungan langsung.";
+                        
+                        $parsed = [
+                            'status' => 'success',
+                            'headline' => 'Ringkasan Performa & Minat Pelanggan',
+                            'overview' => "Sepanjang periode {$startDate} hingga {$endDate}, website mencatat {$views} kunjungan dengan {$uniq} calon pelanggan unik. Dari jumlah tersebut, sebanyak {$totalWa} orang telah langsung menghubungi WhatsApp Arno D Clean (rasio konversi {$convRate}%).",
+                            'ads_insight' => $adsText,
+                            'peak_time_insight' => "Aktivitas calon pelanggan menghubungi WhatsApp paling tinggi terpantau di kisaran jam {$peakHour}. Pastikan tim fast-response pada jam tersebut.",
+                            'actionable_tips' => [
+                                "Pertahankan kecepatan balas pesan pada jam sibuk ({$peakHour}) untuk memaksimalkan closing pemesanan.",
+                                "Tingkatkan promosi layanan cuci sofa & kasur di area Jabodetabek yang memiliki traffic kunjungan tertinggi.",
+                                "Perbanyak artikel tips kebersihan rumah untuk terus mendatangkan prospek gratisan jangka panjang."
+                            ]
+                        ];
+                    }
+
+                    echo json_encode(['status' => 'success', 'data' => $parsed]);
                     break;
                 }
             }

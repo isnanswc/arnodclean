@@ -46,12 +46,15 @@ interface TrendItem {
 }
 
 interface TopPage {
+  title?: string
   page_url: string
   views: number
 }
 
 interface TopCity {
   city: string
+  country?: string
+  is_indonesia?: boolean
   visitors: number
 }
 
@@ -70,10 +73,22 @@ interface WaLogItem {
   id: number
   clicked_at: string
   button_label: string
+  page_name?: string
   page_url: string
+  clean_path?: string
+  campaign_type?: string
+  campaign_badge?: string
   ip_address: string
   location: string
   device: string
+}
+
+interface AiInsightData {
+  headline: string
+  overview: string
+  ads_insight: string
+  peak_time_insight: string
+  actionable_tips: string[]
 }
 
 interface ReportData {
@@ -117,6 +132,28 @@ const reportData = ref<ReportData | null>(null)
 // Heatmap Mode
 const heatmapType = ref<'traffic' | 'wa'>('traffic')
 
+// Breakdown Tab Mode ('device' | 'source')
+const trafficBreakdownTab = ref<'device' | 'source'>('device')
+
+// AI Report Insight State
+const aiInsight = ref<AiInsightData | null>(null)
+const loadingAi = ref(false)
+
+// Raw Technical URL Inspection Modal
+const selectedRawUrl = ref<string | null>(null)
+function openUrlModal(url: string) {
+  selectedRawUrl.value = url
+}
+function closeUrlModal() {
+  selectedRawUrl.value = null
+}
+function copyRawUrl() {
+  if (selectedRawUrl.value) {
+    navigator.clipboard.writeText(selectedRawUrl.value)
+    showToast('Tautan teknis berhasil disalin ke clipboard!', 'success')
+  }
+}
+
 // WA Logs Filter & Pagination
 const waSearch = ref('')
 const waDeviceFilter = ref('')
@@ -155,6 +192,33 @@ let heatmapBarChartInstance: Chart | null = null
 let deviceChartInstance: Chart | null = null
 let sourceChartInstance: Chart | null = null
 
+async function fetchAiInsight() {
+  loadingAi.value = true
+  try {
+    const end = new Date()
+    const start = new Date()
+    start.setDate(end.getDate() - selectedDays.value)
+
+    const res = await axios.post(
+      '/api/v2/data.php?type=reporting',
+      {
+        action: 'ai_insight',
+        start_date: start.toISOString().split('T')[0],
+        end_date: end.toISOString().split('T')[0]
+      },
+      { withCredentials: true }
+    )
+
+    if (res.data.status === 'success' && res.data.data) {
+      aiInsight.value = res.data.data
+    }
+  } catch {
+    // Keep fallback or silent
+  } finally {
+    loadingAi.value = false
+  }
+}
+
 async function fetchReportData() {
   loading.value = true
   try {
@@ -181,6 +245,9 @@ async function fetchReportData() {
 
       await nextTick()
       renderAllCharts()
+
+      // Fetch AI Insight in background
+      fetchAiInsight()
     }
   } catch (err: any) {
     showToast(err.response?.data?.message || 'Gagal memuat data laporan analitik', 'error')
@@ -188,6 +255,41 @@ async function fetchReportData() {
     loading.value = false
   }
 }
+
+// Computed Device & Source Stats for human-readable display
+const totalDeviceVisits = computed(() => {
+  return (reportData.value?.devices || []).reduce((acc, d) => acc + d.count, 0)
+})
+
+const deviceStats = computed(() => {
+  const tot = totalDeviceVisits.value || 1
+  return (reportData.value?.devices || []).map((d, i) => {
+    const colors = ['#2563eb', '#10b981', '#f59e0b', '#64748b']
+    return {
+      name: d.device,
+      count: d.count,
+      pct: Math.round((d.count / tot) * 100),
+      color: colors[i % colors.length]
+    }
+  })
+})
+
+const totalSourceVisits = computed(() => {
+  return (reportData.value?.top_sources || []).reduce((acc, s) => acc + s.visits, 0)
+})
+
+const sourceStats = computed(() => {
+  const tot = totalSourceVisits.value || 1
+  return (reportData.value?.top_sources || []).map((s, i) => {
+    const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#10b981']
+    return {
+      source: s.source,
+      visits: s.visits,
+      pct: Math.round((s.visits / tot) * 100),
+      color: colors[i % colors.length]
+    }
+  })
+})
 
 // Filtered WA Logs
 const filteredWaLogs = computed(() => {
@@ -199,6 +301,8 @@ const filteredWaLogs = computed(() => {
     const matchSearch =
       !q ||
       log.button_label.toLowerCase().includes(q) ||
+      (log.page_name && log.page_name.toLowerCase().includes(q)) ||
+      (log.campaign_badge && log.campaign_badge.toLowerCase().includes(q)) ||
       log.page_url.toLowerCase().includes(q) ||
       log.ip_address.toLowerCase().includes(q) ||
       log.location.toLowerCase().includes(q)
@@ -363,71 +467,84 @@ function renderAllCharts() {
   // 2. Hourly Bar Chart below heatmap
   renderHourlyChart()
 
-  // 3. Devices Doughnut Chart
-  if (deviceCanvas.value) {
-    if (deviceChartInstance) deviceChartInstance.destroy()
-    const devices = reportData.value.devices || []
-    const labels = devices.map((d) => d.device)
-    const data = devices.map((d) => d.count)
-
-    deviceChartInstance = new Chart(deviceCanvas.value, {
-      type: 'doughnut',
-      data: {
-        labels: labels.length ? labels : ['Desktop', 'Mobile'],
-        datasets: [
-          {
-            data: data.length ? data : [1, 1],
-            backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#64748b'],
-            borderWidth: 0
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '70%',
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { boxWidth: 8, usePointStyle: true, font: { family: fontFamily, size: 10 } }
-          }
-        }
-      }
-    })
-  }
-
-  // 4. Sources Pie Chart
-  if (sourceCanvas.value) {
-    if (sourceChartInstance) sourceChartInstance.destroy()
-    const sources = reportData.value.top_sources || []
-    const labels = sources.map((s) => s.source)
-    const data = sources.map((s) => s.visits)
-
-    sourceChartInstance = new Chart(sourceCanvas.value, {
-      type: 'pie',
-      data: {
-        labels: labels.length ? labels : ['Direct'],
-        datasets: [
-          {
-            data: data.length ? data : [1],
-            backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#10b981'],
-            borderWidth: 0
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { boxWidth: 8, usePointStyle: true, font: { family: fontFamily, size: 10 } }
-          }
-        }
-      }
-    })
+  // 3. Devices or Source Breakdown
+  if (trafficBreakdownTab.value === 'device') {
+    renderDeviceChart()
+  } else {
+    renderSourceChart()
   }
 }
+
+function renderDeviceChart() {
+  if (!deviceCanvas.value || !reportData.value) return
+  if (deviceChartInstance) deviceChartInstance.destroy()
+  const devices = reportData.value.devices || []
+  const labels = devices.map((d) => d.device)
+  const data = devices.map((d) => d.count)
+
+  deviceChartInstance = new Chart(deviceCanvas.value, {
+    type: 'doughnut',
+    data: {
+      labels: labels.length ? labels : ['Desktop', 'Mobile'],
+      datasets: [
+        {
+          data: data.length ? data : [1, 1],
+          backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#64748b'],
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  })
+}
+
+function renderSourceChart() {
+  if (!sourceCanvas.value || !reportData.value) return
+  if (sourceChartInstance) sourceChartInstance.destroy()
+  const sources = reportData.value.top_sources || []
+  const labels = sources.map((s) => s.source)
+  const data = sources.map((s) => s.visits)
+
+  sourceChartInstance = new Chart(sourceCanvas.value, {
+    type: 'pie',
+    data: {
+      labels: labels.length ? labels : ['Direct'],
+      datasets: [
+        {
+          data: data.length ? data : [1],
+          backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#10b981'],
+          borderWidth: 2,
+          borderColor: '#ffffff'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  })
+}
+
+watch(trafficBreakdownTab, () => {
+  nextTick(() => {
+    if (trafficBreakdownTab.value === 'device') {
+      renderDeviceChart()
+    } else {
+      renderSourceChart()
+    }
+  })
+})
 
 function renderHourlyChart() {
   if (!heatmapBarCanvas.value) return
@@ -662,17 +779,80 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- AI Smart Insight Banner -->
+    <!-- AI Business Consultant & Executive Summary Card -->
     <div
-      v-if="reportData?.smart_summary"
-      class="p-4 rounded-3xl bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-sky-50/80 border border-blue-100/80 flex items-start gap-3.5 text-blue-950 shadow-sm"
+      class="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white shadow-xl relative overflow-hidden"
     >
-      <div class="w-10 h-10 rounded-2xl bg-white shadow-sm text-blue-600 flex items-center justify-center flex-shrink-0">
-        <Sparkles class="w-5 h-5" />
+      <div class="absolute -right-12 -bottom-12 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10 relative z-10">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-cyan-300 flex items-center justify-center shrink-0 shadow-inner">
+            <Sparkles class="w-5 h-5" />
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-cyan-300">AI Business Consultant</span>
+              <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-cyan-400/20 text-cyan-200 border border-cyan-400/30">Executive Insight</span>
+            </div>
+            <h2 class="text-base sm:text-lg font-bold text-white mt-0.5">
+              {{ aiInsight?.headline || 'Ringkasan Eksekutif & Analisis Performa Arno D Clean' }}
+            </h2>
+          </div>
+        </div>
+
+        <button
+          @click="fetchAiInsight"
+          :disabled="loadingAi"
+          class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60 cursor-pointer"
+        >
+          <RefreshCw class="w-3.5 h-3.5" :class="loadingAi ? 'animate-spin' : ''" />
+          <span>{{ loadingAi ? 'Menganalisis Data...' : 'Minta Analisis AI Terbaru' }}</span>
+        </button>
       </div>
-      <div>
-        <p class="text-xs font-bold uppercase tracking-wider text-blue-700">AI Executive Summary</p>
-        <p class="text-xs sm:text-sm mt-0.5 leading-relaxed font-medium" v-html="reportData.smart_summary"></p>
+
+      <!-- Overview Paragraph -->
+      <div class="mt-4 text-xs sm:text-sm text-slate-200 leading-relaxed font-normal relative z-10">
+        <p v-if="aiInsight?.overview">{{ aiInsight.overview }}</p>
+        <p v-else v-html="reportData?.smart_summary"></p>
+      </div>
+
+      <!-- 3 Key Insight Pillars -->
+      <div v-if="aiInsight" class="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-5 pt-4 border-t border-white/10 relative z-10">
+        <!-- 1. Google Ads vs Organic -->
+        <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xs">
+          <div class="flex items-center gap-2 text-cyan-300 text-xs font-bold mb-1.5">
+            <Flame class="w-4 h-4 text-amber-400" />
+            <span>Iklan Google Ads vs Organik</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            {{ aiInsight.ads_insight }}
+          </p>
+        </div>
+
+        <!-- 2. Peak Hours -->
+        <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xs">
+          <div class="flex items-center gap-2 text-emerald-300 text-xs font-bold mb-1.5">
+            <Clock class="w-4 h-4 text-emerald-400" />
+            <span>Waktu Emas Calon Pelanggan</span>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            {{ aiInsight.peak_time_insight }}
+          </p>
+        </div>
+
+        <!-- 3. Practical Tips -->
+        <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xs">
+          <div class="flex items-center gap-2 text-amber-300 text-xs font-bold mb-1.5">
+            <CheckCircle2 class="w-4 h-4 text-amber-400" />
+            <span>Rekomendasi Tindakan Bisnis</span>
+          </div>
+          <ul class="text-xs text-slate-300 space-y-1 list-disc list-inside">
+            <li v-for="(tip, tIdx) in aiInsight.actionable_tips" :key="tIdx" class="leading-relaxed">
+              {{ tip }}
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -925,36 +1105,57 @@ onBeforeUnmount(() => {
             <tr
               v-for="(log, idx) in paginatedWaLogs"
               :key="log.id"
-              class="hover:bg-slate-50/70 transition-colors"
+              class="hover:bg-slate-50/70 transition-colors border-b border-slate-100 last:border-0"
             >
-              <td class="py-3 pl-3 font-mono font-bold text-slate-400">
+              <td class="py-3 pl-3 font-mono font-bold text-slate-400 align-top">
                 {{ (currentWaPage - 1) * waPageSize + idx + 1 }}
               </td>
-              <td class="py-3 whitespace-nowrap text-slate-700">
-                <div>{{ new Date(log.clicked_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) }}</div>
-                <div class="text-[10px] text-slate-400">{{ new Date(log.clicked_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }}</div>
+              <td class="py-3 whitespace-nowrap text-slate-700 align-top">
+                <div class="font-semibold">{{ new Date(log.clicked_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) }}</div>
+                <div class="text-[10px] text-slate-400">{{ new Date(log.clicked_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }} WIB</div>
               </td>
-              <td class="py-3 max-w-xs">
-                <div class="font-bold text-emerald-700">{{ log.button_label }}</div>
-                <div class="text-[11px] text-slate-400 truncate mt-0.5" :title="log.page_url">
-                  {{ log.page_url }}
+              <td class="py-3 max-w-[340px] pr-4 align-top">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="font-bold text-slate-900 text-xs">{{ log.button_label }}</span>
+                  <span
+                    v-if="log.campaign_badge"
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/80 inline-flex items-center gap-1 shrink-0"
+                  >
+                    <Flame class="w-3 h-3 text-amber-500" />
+                    {{ log.campaign_badge }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-1.5 text-[11px] text-slate-500 mt-1 flex-wrap">
+                  <span class="font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100/80">
+                    {{ log.page_name || 'Halaman Beranda (Home)' }}
+                  </span>
+                  <button
+                    v-if="log.page_url && log.page_url !== '/'"
+                    type="button"
+                    @click="openUrlModal(log.page_url)"
+                    class="text-slate-400 hover:text-slate-700 p-0.5 rounded hover:bg-slate-100 transition-colors inline-flex items-center gap-0.5 text-[10px] cursor-pointer"
+                    title="Lihat URL Lengkap"
+                  >
+                    <ExternalLink class="w-3 h-3" />
+                    <span>Link</span>
+                  </button>
                 </div>
               </td>
-              <td class="py-3">
-                <span class="font-mono text-[11px] font-bold text-slate-600 px-2 py-0.5 rounded-lg bg-slate-100">
+              <td class="py-3 align-top">
+                <span class="font-mono text-[11px] font-bold text-slate-600 px-2 py-1 rounded-lg bg-slate-100 inline-block">
                   {{ log.ip_address }}
                 </span>
               </td>
-              <td class="py-3 text-slate-600">
+              <td class="py-3 text-slate-600 align-top">
                 <div class="flex items-center gap-1">
-                  <MapPin class="w-3 h-3 text-rose-500 shrink-0" />
-                  <span class="truncate">{{ log.location }}</span>
+                  <MapPin class="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                  <span class="truncate max-w-[150px] font-medium">{{ log.location }}</span>
                 </div>
               </td>
-              <td class="py-3 pr-3 text-right">
+              <td class="py-3 pr-3 text-right align-top">
                 <span
-                  class="px-2 py-0.5 rounded-md text-[10px] font-bold"
-                  :class="log.device === 'Mobile' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-700'"
+                  class="px-2.5 py-1 rounded-lg text-[10px] font-bold inline-block"
+                  :class="log.device === 'Mobile' ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-slate-100 text-slate-700 border border-slate-200'"
                 >
                   {{ log.device }}
                 </span>
@@ -1000,29 +1201,26 @@ onBeforeUnmount(() => {
         <div class="flex items-center justify-between pb-2 border-b border-slate-100">
           <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
             <Layers class="w-4 h-4 text-indigo-600" />
-            <span>Halaman Terpopuler (Top Pages)</span>
+            <span>Halaman Terpopuler</span>
           </h3>
           <span class="text-[10px] text-slate-400 font-semibold">Views</span>
         </div>
 
-        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+        <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
           <div v-if="!reportData?.top_pages?.length" class="text-xs text-slate-400 py-4 text-center">
-            Belum ada data halaman.
+            Belum ada data halaman tercatat.
           </div>
           <div
             v-for="p in reportData?.top_pages"
             :key="p.page_url"
-            class="flex items-center justify-between text-xs py-1.5 px-2 rounded-xl bg-slate-50 hover:bg-blue-50/50 transition-colors"
+            class="flex items-center justify-between text-xs py-2 px-2.5 rounded-xl bg-slate-50 hover:bg-blue-50/50 transition-colors gap-2"
           >
-            <a
-              :href="p.page_url"
-              target="_blank"
-              class="truncate text-slate-700 hover:text-blue-600 font-medium max-w-[210px]"
-              :title="p.page_url"
-            >
-              {{ p.page_url }}
-            </a>
-            <span class="font-bold text-slate-900 font-mono">{{ p.views }}</span>
+            <div class="truncate text-slate-700 font-medium" :title="p.page_url">
+              {{ p.title || p.page_url }}
+            </div>
+            <span class="font-bold text-slate-900 font-mono shrink-0 px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11px]">
+              {{ p.views }}
+            </span>
           </div>
         </div>
       </div>
@@ -1032,51 +1230,151 @@ onBeforeUnmount(() => {
         <div class="flex items-center justify-between pb-2 border-b border-slate-100">
           <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
             <MapPin class="w-4 h-4 text-rose-500" />
-            <span>Kota Pengunjung (Top Cities)</span>
+            <span>Wilayah Pengunjung</span>
           </h3>
           <span class="text-[10px] text-slate-400 font-semibold">Visitors</span>
         </div>
 
-        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+        <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
           <div v-if="!reportData?.top_cities?.length" class="text-xs text-slate-400 py-4 text-center">
             Belum ada data kota tercatat.
           </div>
           <div
             v-for="c in reportData?.top_cities"
             :key="c.city"
-            class="flex items-center justify-between text-xs py-1.5 px-2 rounded-xl bg-slate-50 hover:bg-rose-50/50 transition-colors"
+            class="flex items-center justify-between text-xs py-2 px-2.5 rounded-xl bg-slate-50 hover:bg-rose-50/50 transition-colors gap-2"
           >
-            <span class="font-medium text-slate-800 truncate max-w-[210px]">{{ c.city }}</span>
-            <span class="font-bold text-slate-900 font-mono">{{ c.visitors }}</span>
+            <div class="flex items-center gap-2 truncate">
+              <span class="w-2 h-2 rounded-full shrink-0" :class="c.is_indonesia ? 'bg-emerald-500' : 'bg-slate-400'"></span>
+              <span class="font-medium text-slate-800 truncate">{{ c.city }}</span>
+              <span v-if="c.country" class="text-[10px] text-slate-400 shrink-0">({{ c.country }})</span>
+            </div>
+            <span class="font-bold text-slate-900 font-mono shrink-0 px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11px]">
+              {{ c.visitors }}
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- Device & Source Chart -->
-      <div class="rounded-3xl bg-white border border-slate-100 shadow-subtle p-5 space-y-4">
+      <!-- Device & Source Chart (Spacious Tabs, Anti-Collision) -->
+      <div class="rounded-3xl bg-white border border-slate-100 shadow-subtle p-5 space-y-4 flex flex-col justify-between">
         <div class="flex items-center justify-between pb-2 border-b border-slate-100">
           <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
             <Monitor class="w-4 h-4 text-emerald-600" />
-            <span>Perangkat & Sumber Trafik</span>
+            <span>Perangkat & Sumber</span>
           </h3>
+
+          <!-- Tab toggle -->
+          <div class="flex p-0.5 rounded-lg bg-slate-100 text-[10px] font-bold">
+            <button
+              @click="trafficBreakdownTab = 'device'"
+              class="px-2.5 py-1 rounded-md transition-all cursor-pointer"
+              :class="trafficBreakdownTab === 'device' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-500 hover:text-slate-700'"
+            >
+              Perangkat
+            </button>
+            <button
+              @click="trafficBreakdownTab = 'source'"
+              class="px-2.5 py-1 rounded-md transition-all cursor-pointer"
+              :class="trafficBreakdownTab === 'source' ? 'bg-white text-emerald-700 shadow-xs' : 'text-slate-500 hover:text-slate-700'"
+            >
+              Sumber Trafik
+            </button>
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase text-center mb-1">Perangkat</p>
-            <div class="h-28 relative">
-              <canvas ref="deviceCanvas"></canvas>
+        <!-- View 1: Perangkat (Device) -->
+        <div v-show="trafficBreakdownTab === 'device'" class="space-y-3">
+          <div class="h-36 relative flex items-center justify-center">
+            <canvas ref="deviceCanvas"></canvas>
+          </div>
+
+          <div class="space-y-1.5 pt-1">
+            <div
+              v-for="d in deviceStats"
+              :key="d.name"
+              class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-slate-50"
+            >
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ backgroundColor: d.color }"></span>
+                <span class="font-medium text-slate-700">{{ d.name }}</span>
+              </div>
+              <div class="flex items-center gap-2 font-mono font-bold text-slate-900">
+                <span>{{ d.count }}</span>
+                <span class="text-slate-400 text-[10px]">({{ d.pct }}%)</span>
+              </div>
             </div>
           </div>
-          <div>
-            <p class="text-[10px] font-bold text-slate-400 uppercase text-center mb-1">Sumber Referrer</p>
-            <div class="h-28 relative">
-              <canvas ref="sourceCanvas"></canvas>
+        </div>
+
+        <!-- View 2: Sumber Trafik (Referrer) -->
+        <div v-show="trafficBreakdownTab === 'source'" class="space-y-3">
+          <div class="h-36 relative flex items-center justify-center">
+            <canvas ref="sourceCanvas"></canvas>
+          </div>
+
+          <div class="space-y-1.5 pt-1 max-h-36 overflow-y-auto pr-1">
+            <div
+              v-for="s in sourceStats"
+              :key="s.source"
+              class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-slate-50"
+            >
+              <div class="flex items-center gap-2 truncate max-w-[170px]" :title="s.source">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ backgroundColor: s.color }"></span>
+                <span class="font-medium text-slate-700 truncate">{{ s.source }}</span>
+              </div>
+              <div class="flex items-center gap-2 font-mono font-bold text-slate-900 shrink-0">
+                <span>{{ s.visits }}</span>
+                <span class="text-slate-400 text-[10px]">({{ s.pct }}%)</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
+    </div>
+
+    <!-- MODAL DETAIL URL TEKNIS -->
+    <div
+      v-if="selectedRawUrl"
+      class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn"
+    >
+      <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 p-5 space-y-4 animate-scaleUp">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <ExternalLink class="w-4 h-4 text-emerald-600" />
+            <span>Detail Parameter Link & Iklan</span>
+          </h3>
+          <button @click="closeUrlModal" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer">
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Berikut adalah URL pelacakan lengkap dari sumber klik ini (berguna untuk memeriksa parameter <em>Google Click ID / gclid</em>):
+          </p>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 break-all select-all max-h-48 overflow-y-auto">
+            {{ selectedRawUrl }}
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button
+            @click="copyRawUrl"
+            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <Check class="w-3.5 h-3.5" />
+            <span>Salin URL Teknis</span>
+          </button>
+          <button
+            @click="closeUrlModal"
+            class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- MODAL TELEGRAM REPORT CONFIG & INSTANT TRIGGER -->
