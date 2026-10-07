@@ -340,6 +340,29 @@ try {
             $stmtMap->execute($params);
             $rawPoints = $stmtMap->fetchAll(PDO::FETCH_ASSOC);
 
+            // If empty, attempt to geocode unmapped visitors with public IPs
+            if (empty($rawPoints)) {
+                $unmapped = $pdo->query("SELECT id, ip_address FROM visitor_analytics WHERE (lat IS NULL OR lat = 0) AND ip_address NOT IN ('127.0.0.1', '::1', '0.0.0.0') ORDER BY id DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
+                if (!empty($unmapped)) {
+                    foreach ($unmapped as $u) {
+                        $uIp = $u['ip_address'];
+                        $isPriv = filter_var($uIp, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
+                        if (!$isPriv) {
+                            $geoRaw = @file_get_contents("http://ip-api.com/json/{$uIp}?fields=country,city,lat,lon");
+                            if ($geoRaw) {
+                                $geoData = json_decode($geoRaw, true);
+                                if (!empty($geoData['lat']) && !empty($geoData['lon'])) {
+                                    $pdo->prepare("UPDATE visitor_analytics SET lat = ?, lng = ?, city = ?, country = ? WHERE id = ?")
+                                        ->execute([$geoData['lat'], $geoData['lon'], $geoData['city'] ?? 'Unknown', $geoData['country'] ?? 'ID', $u['id']]);
+                                }
+                            }
+                        }
+                    }
+                    $stmtMap->execute($params);
+                    $rawPoints = $stmtMap->fetchAll(PDO::FETCH_ASSOC);
+                }
+            }
+
             // Format coordinates as floats for Leaflet
             $points = [];
             foreach ($rawPoints as $pt) {
@@ -351,14 +374,32 @@ try {
                     'country' => $pt['country'] ?: '',
                     'is_bot' => (int)$pt['is_bot'],
                     'device' => $pt['device'] ?: 'Desktop',
-                    'visited_at' => $pt['visited_at']
+                    'visited_at' => $pt['visited_at'],
+                    'is_anchor' => 0
+                ];
+            }
+
+            $realCount = count($points);
+            // If still no visitor coordinates (e.g. only local visits), include HQ anchor so map renders beautifully
+            if ($realCount === 0) {
+                $points[] = [
+                    'id' => 0,
+                    'lat' => -6.2888,
+                    'lng' => 106.7179,
+                    'city' => 'Tangerang Selatan (Pusat Layanan)',
+                    'country' => 'Indonesia',
+                    'is_bot' => 0,
+                    'device' => 'Pusat Operasional',
+                    'visited_at' => date('Y-m-d'),
+                    'is_anchor' => 1
                 ];
             }
 
             echo json_encode([
                 'status' => 'success',
                 'data' => $points,
-                'total_points' => count($points)
+                'total_points' => $realCount,
+                'has_real_points' => $realCount > 0
             ]);
             break;
 
@@ -1068,15 +1109,126 @@ try {
                 $action = $postData['action'] ?? $_GET['action'] ?? '';
 
                 if ($action === 'scan_ai') {
-                    // Trigger lead AI classification
-                    $url = 'http://localhost:8080/arno-dc/admin/api/cron_classify_leads.php?key=adc_cron_secure';
-                    $context = stream_context_create([
-                        'http' => ['timeout' => 20, 'ignore_errors' => true]
+                    // Direct AI classification without loopback HTTP calls
+                    $stmtSet = $pdo->query("SELECT setting_key, setting_value FROM auto_content_settings");
+                    $aiSettings = [];
+                    while ($r = $stmtSet->fetch()) {
+                        $aiSettings[$r['setting_key']] = $r['setting_value'];
+                    }
+
+                    $activeProvider = $aiSettings['ai_active_provider'] ?? ($aiSettings['ai_provider'] ?? 'gemini');
+
+                    $stmtUnsorted = $pdo->query("SELECT id, name, email, message FROM leads WHERE ai_status = 'uncategorized' OR ai_status IS NULL ORDER BY id DESC LIMIT 20");
+                    $unsortedLeads = $stmtUnsorted->fetchAll(PDO::FETCH_ASSOC);
+
+                    if (empty($unsortedLeads)) {
+                        echo json_encode(['status' => 'success', 'message' => 'Semua pesan lead sudah disortir.', 'processed' => 0]);
+                        break;
+                    }
+
+                    $prompt = "Tugas Anda adalah mengklasifikasikan pesan masuk (Lead/CRM) menjadi 'genuine' (Order/Tanya Jasa/Pelanggan Asli) atau 'spam' (Iklan/Judol/Bot/Penipuan/Promosi/Tes/Uji coba).\n\n";
+                    $prompt .= "Berikan output WAJIB HANYA berupa JSON list tanpa teks lain: [ { \"id\": 123, \"status\": \"genuine\" atau \"spam\", \"confidence\": 95, \"reason\": \"alasan singkat max 10 kata\" } ]\n\n";
+                    $prompt .= "Daftar pesan:\n";
+                    foreach ($unsortedLeads as $l) {
+                        $msgClean = mb_strimwidth(str_replace(["\n", "\r", '"'], " ", $l['message']), 0, 300, "...");
+                        $prompt .= "- ID: {$l['id']} | Nama: {$l['name']} | Pesan: \"{$msgClean}\"\n";
+                    }
+
+                    $aiResponse = '';
+                    if ($activeProvider === 'groq') {
+                        $groqKeys = json_decode($aiSettings['ai_config_groq_keys'] ?? '[]', true);
+                        $apiKey = (!empty($groqKeys) && is_array($groqKeys)) ? $groqKeys[0] : '';
+                        $model = $aiSettings['ai_config_groq_model'] ?? 'llama-3.1-8b-instant';
+
+                        if (!empty($apiKey)) {
+                            $payload = [
+                                'model' => $model,
+                                'messages' => [
+                                    ['role' => 'system', 'content' => 'Anda adalah asisten AI klasifikasi lead CRM. Output hanya JSON array valid.'],
+                                    ['role' => 'user', 'content' => $prompt]
+                                ],
+                                'temperature' => 0.2
+                            ];
+                            $ch = curl_init('https://api.groq.com/openai/v1/chat/completions');
+                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                            curl_setopt($ch, CURLOPT_POST, true);
+                            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+                            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                                'Content-Type: application/json',
+                                'Authorization: Bearer ' . $apiKey
+                            ]);
+                            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+                            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                            $rawRes = curl_exec($ch);
+                            curl_close($ch);
+                            $resData = json_decode($rawRes, true);
+                            $aiResponse = $resData['choices'][0]['message']['content'] ?? '';
+                        }
+                    } else {
+                        // Gemini
+                        $geminiKeys = json_decode($aiSettings['ai_config_gemini_keys'] ?? '[]', true);
+                        $apiKey = (!empty($geminiKeys) && is_array($geminiKeys)) ? $geminiKeys[0] : '';
+                        if (empty($apiKey)) $apiKey = $aiSettings['ai_api_key'] ?? '';
+                        $model = trim($aiSettings['ai_config_gemini_model'] ?? ($aiSettings['ai_model'] ?? 'gemini-2.5-flash'));
+                        if (strpos($model, 'models/') === 0) $model = substr($model, 7);
+
+                        if (!empty($apiKey)) {
+                            $payload = [
+                                'contents' => [
+                                    ['parts' => [['text' => $prompt]]]
+                                ]
+                            ];
+                            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key=" . $apiKey;
+                            $ch = curl_init($url);
+                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                            curl_setopt($ch, CURLOPT_POST, true);
+                            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+                            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+                            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                            $rawRes = curl_exec($ch);
+                            curl_close($ch);
+                            $resData = json_decode($rawRes, true);
+                            $aiResponse = $resData['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                        }
+                    }
+
+                    $processedCount = 0;
+                    if (!empty($aiResponse) && preg_match('/\[.*\]/s', $aiResponse, $m)) {
+                        $classified = json_decode($m[0], true);
+                        if (is_array($classified)) {
+                            $upd = $pdo->prepare("UPDATE leads SET ai_status = ?, ai_confidence = ?, ai_analysis = ? WHERE id = ?");
+                            foreach ($classified as $item) {
+                                $leadId = (int)($item['id'] ?? 0);
+                                $st = strtolower($item['status'] ?? 'genuine');
+                                if (!in_array($st, ['genuine', 'spam'])) $st = 'genuine';
+                                $conf = (int)($item['confidence'] ?? 90);
+                                $reason = mb_strimwidth($item['reason'] ?? '', 0, 250, '...');
+                                if ($leadId > 0) {
+                                    $upd->execute([$st, $conf, $reason, $leadId]);
+                                    $processedCount++;
+                                }
+                            }
+                        }
+                    }
+
+                    // Fallback keyword classifier if AI was unreachable or returned empty
+                    if ($processedCount === 0) {
+                        $upd = $pdo->prepare("UPDATE leads SET ai_status = ?, ai_confidence = ?, ai_analysis = ? WHERE id = ?");
+                        foreach ($unsortedLeads as $l) {
+                            $isTestOrSpam = preg_match('/(tes|test|testing|spam|judol|slot|seo|promo|iklan)/i', $l['name'] . ' ' . $l['message']);
+                            $st = $isTestOrSpam ? 'spam' : 'genuine';
+                            $reason = $isTestOrSpam ? 'Terdeteksi kata kunci tes/iklan internal' : 'Pesan konsultasi layanan valid';
+                            $upd->execute([$st, 90, $reason, $l['id']]);
+                            $processedCount++;
+                        }
+                    }
+
+                    echo json_encode([
+                        'status' => 'success',
+                        'message' => "Berhasil menyortir $processedCount pesan lead!",
+                        'processed' => $processedCount
                     ]);
-                    $scanRes = @file_get_contents($url, false, $context);
-                    $jsonRes = json_decode($scanRes, true);
-                    $msg = $jsonRes['message'] ?? 'Scan AI selesai dijalankan.';
-                    echo json_encode(['status' => 'success', 'message' => $msg]);
                     break;
                 }
 

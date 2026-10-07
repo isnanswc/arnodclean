@@ -22,7 +22,10 @@ import {
   X,
   Clock,
   Mail,
-  Phone
+  Phone,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-vue-next'
 
 interface Lead {
@@ -79,6 +82,31 @@ const activeTab = ref<'leads' | 'wa_tracker'>('leads')
 const loading = ref(false)
 const scanning = ref(false)
 const leads = ref<Lead[]>([])
+const sortField = ref<'created_at' | 'name' | 'status' | 'ai_status'>('created_at')
+const sortDirection = ref<'asc' | 'desc'>('desc')
+
+function toggleSort(field: 'created_at' | 'name' | 'status' | 'ai_status') {
+  if (sortField.value === field) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortField.value = field
+    sortDirection.value = field === 'created_at' ? 'desc' : 'asc'
+  }
+}
+
+const sortedLeads = computed(() => {
+  return [...leads.value].sort((a, b) => {
+    let valA: any = a[sortField.value] || ''
+    let valB: any = b[sortField.value] || ''
+    if (sortField.value === 'created_at') {
+      const timeA = new Date(valA).getTime()
+      const timeB = new Date(valB).getTime()
+      return sortDirection.value === 'asc' ? timeA - timeB : timeB - timeA
+    }
+    const cmp = String(valA).localeCompare(String(valB))
+    return sortDirection.value === 'asc' ? cmp : -cmp
+  })
+})
 const services = ref<{ id: number; title: string }[]>([])
 const summary = ref<Summary>({
   total: 0,
@@ -560,12 +588,56 @@ onMounted(() => {
         <div class="overflow-x-auto rounded-2xl border border-slate-100">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-slate-50/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100">
-                <th class="py-3.5 px-4 w-32">Waktu</th>
-                <th class="py-3.5 px-4">Pelanggan</th>
+              <tr class="bg-slate-50/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 select-none">
+                <th
+                  @click="toggleSort('created_at')"
+                  class="py-3.5 px-4 w-32 cursor-pointer hover:text-blue-600 transition-colors"
+                  title="Klik untuk sortir berdasarkan waktu"
+                >
+                  <div class="flex items-center gap-1.5">
+                    <span>Waktu</span>
+                    <ArrowUp v-if="sortField === 'created_at' && sortDirection === 'asc'" class="w-3.5 h-3.5 text-blue-600" />
+                    <ArrowDown v-else-if="sortField === 'created_at' && sortDirection === 'desc'" class="w-3.5 h-3.5 text-blue-600" />
+                    <ArrowUpDown v-else class="w-3.5 h-3.5 opacity-40 hover:opacity-100" />
+                  </div>
+                </th>
+                <th
+                  @click="toggleSort('name')"
+                  class="py-3.5 px-4 cursor-pointer hover:text-blue-600 transition-colors"
+                  title="Klik untuk sortir berdasarkan nama pelanggan"
+                >
+                  <div class="flex items-center gap-1.5">
+                    <span>Pelanggan</span>
+                    <ArrowUp v-if="sortField === 'name' && sortDirection === 'asc'" class="w-3.5 h-3.5 text-blue-600" />
+                    <ArrowDown v-else-if="sortField === 'name' && sortDirection === 'desc'" class="w-3.5 h-3.5 text-blue-600" />
+                    <ArrowUpDown v-else class="w-3.5 h-3.5 opacity-40 hover:opacity-100" />
+                  </div>
+                </th>
                 <th class="py-3.5 px-4">Kontak</th>
-                <th class="py-3.5 px-4 min-w-[240px]">Pesan & Analisa AI</th>
-                <th class="py-3.5 px-4 w-32">Status</th>
+                <th
+                  @click="toggleSort('ai_status')"
+                  class="py-3.5 px-4 min-w-[240px] cursor-pointer hover:text-blue-600 transition-colors"
+                  title="Klik untuk sortir berdasarkan analisa AI"
+                >
+                  <div class="flex items-center gap-1.5">
+                    <span>Pesan & Analisa AI</span>
+                    <ArrowUp v-if="sortField === 'ai_status' && sortDirection === 'asc'" class="w-3.5 h-3.5 text-blue-600" />
+                    <ArrowDown v-else-if="sortField === 'ai_status' && sortDirection === 'desc'" class="w-3.5 h-3.5 text-blue-600" />
+                    <ArrowUpDown v-else class="w-3.5 h-3.5 opacity-40 hover:opacity-100" />
+                  </div>
+                </th>
+                <th
+                  @click="toggleSort('status')"
+                  class="py-3.5 px-4 w-32 cursor-pointer hover:text-blue-600 transition-colors"
+                  title="Klik untuk sortir berdasarkan status"
+                >
+                  <div class="flex items-center gap-1.5">
+                    <span>Status</span>
+                    <ArrowUp v-if="sortField === 'status' && sortDirection === 'asc'" class="w-3.5 h-3.5 text-blue-600" />
+                    <ArrowDown v-else-if="sortField === 'status' && sortDirection === 'desc'" class="w-3.5 h-3.5 text-blue-600" />
+                    <ArrowUpDown v-else class="w-3.5 h-3.5 opacity-40 hover:opacity-100" />
+                  </div>
+                </th>
                 <th class="py-3.5 px-4 w-24 text-right">Aksi</th>
               </tr>
             </thead>
@@ -577,7 +649,7 @@ onMounted(() => {
                 </td>
               </tr>
 
-              <tr v-else-if="leads.length === 0">
+              <tr v-else-if="sortedLeads.length === 0">
                 <td colspan="6" class="text-center py-12 text-slate-400">
                   <Users class="w-8 h-8 mx-auto text-slate-300 mb-2" />
                   <p class="font-medium text-slate-600">Tidak ada lead ditemukan</p>
@@ -587,7 +659,7 @@ onMounted(() => {
 
               <tr
                 v-else
-                v-for="lead in leads"
+                v-for="lead in sortedLeads"
                 :key="lead.id"
                 class="hover:bg-slate-50/60 transition-colors"
               >

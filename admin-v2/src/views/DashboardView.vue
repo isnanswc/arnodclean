@@ -447,17 +447,18 @@ function initMap() {
     scrollWheelZoom: false
   })
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-    subdomains: 'abcd',
+  // OpenStreetMap standard tile layer (reliable, universal, no rate limit blocking)
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
     maxZoom: 19
   }).addTo(mapInstance)
 
   markerLayerGroup = L.layerGroup().addTo(mapInstance)
 
-  nextTick(() => {
-    mapInstance?.invalidateSize()
-  })
+  // Explicit delayed invalidateSize to guarantee tile render once DOM painted
+  setTimeout(() => mapInstance?.invalidateSize(), 150)
+  setTimeout(() => mapInstance?.invalidateSize(), 400)
+  setTimeout(() => mapInstance?.invalidateSize(), 800)
 }
 
 async function loadMapData() {
@@ -481,29 +482,33 @@ async function loadMapData() {
 
     if (res.data?.status === 'success' && Array.isArray(res.data?.data)) {
       const points = res.data.data
-      mapPointsCount.value = points.length
+      mapPointsCount.value = res.data.total_points ?? points.length
 
       points.forEach((pt: any) => {
         const lat = parseFloat(pt.lat)
         const lng = parseFloat(pt.lng)
         if (isNaN(lat) || isNaN(lng)) return
 
+        const isAnchor = Number(pt.is_anchor) === 1
         const isBot = Number(pt.is_bot) === 1
-        const color = isBot ? '#64748b' : '#2563eb'
-        const fillColor = isBot ? '#cbd5e1' : '#93c5fd'
+        const color = isAnchor ? '#059669' : isBot ? '#64748b' : '#2563eb'
+        const fillColor = isAnchor ? '#34d399' : isBot ? '#cbd5e1' : '#93c5fd'
+        const radius = isAnchor ? 8 : 6
 
         const marker = L.circleMarker([lat, lng], {
-          radius: 6,
+          radius,
           fillColor,
           color,
-          weight: 1.5,
-          opacity: 0.9,
-          fillOpacity: 0.75
+          weight: isAnchor ? 2.5 : 1.5,
+          opacity: 0.95,
+          fillOpacity: 0.8
         })
 
-        const badgeHtml = isBot
+        const badgeHtml = isAnchor
+          ? `<span style="background:#ecfdf5;color:#047857;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;">PUSAT LAYANAN</span>`
+          : isBot
           ? `<span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;">BOT / CRAWLER</span>`
-          : `<span style="background:#eff6ff;color:#1d4ed8;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;">HUMAN VISITOR</span>`
+          : `<span style="background:#eff6ff;color:#1d4ed8;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;">PENGUNJUNG MANUSIA</span>`
 
         const popupHtml = `
           <div style="font-family:sans-serif;text-align:center;padding:4px 6px;">
@@ -516,9 +521,15 @@ async function loadMapData() {
         markerLayerGroup?.addLayer(marker)
       })
 
-      nextTick(() => {
+      setTimeout(() => {
         mapInstance?.invalidateSize()
-      })
+        if (markerLayerGroup && markerLayerGroup.getLayers().length > 0) {
+          const group = L.featureGroup(markerLayerGroup.getLayers())
+          if (group.getBounds().isValid()) {
+            mapInstance?.fitBounds(group.getBounds().pad(0.25), { maxZoom: 11 })
+          }
+        }
+      }, 200)
     } else {
       mapPointsCount.value = 0
     }
@@ -1126,8 +1137,8 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Map Container -->
-      <div class="relative w-full h-96 bg-slate-50">
-        <div ref="mapContainer" class="w-full h-full z-10"></div>
+      <div class="relative w-full bg-slate-100 overflow-hidden" style="height: 420px; min-height: 420px;">
+        <div ref="mapContainer" class="w-full z-10" style="height: 420px; min-height: 420px; width: 100%;"></div>
         <div class="absolute top-3 right-3 z-20 px-3 py-1.5 rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-sm text-[11px] font-medium text-slate-600">
           Jangkauan: <strong class="text-slate-900 font-bold">{{ rangeLabels[currentRange] }}</strong>
         </div>
